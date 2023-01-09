@@ -22,6 +22,8 @@ The latest release can be installed using pip
 pip install differences
 ```
 
+currently requires Python 3.9+
+
 ## Quick Start
 
 ### ATTgt 
@@ -43,7 +45,7 @@ att_gt.fit(formula='y')
 att_gt.aggregate('event')
 ```
 
-*dfferences* ATTgt benefitted substantially from the original authors' R packages: Callaway & Sant'Anna's [did](https://github.com/bcallaway11/did) and Sant'Anna and 
+*differences* ATTgt benefitted substantially from the original authors' R packages: Callaway & Sant'Anna's [did](https://github.com/bcallaway11/did) and Sant'Anna and 
 Zhao's [DRDID](https://github.com/pedrohcgs/DRDID)
 
 ### TWFE
