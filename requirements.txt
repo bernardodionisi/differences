@@ -1,0 +1,12 @@
+pandas>=1.2
+numpy
+scipy
+formulaic>=0.3.4,<0.4.0
+linearmodels
+statsmodels>=0.13,<1.0
+pyhdfe
+scikit-learn
+plotto=0.1.3
+tqdm
+joblib
+altair

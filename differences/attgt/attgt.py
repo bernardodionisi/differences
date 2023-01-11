@@ -1,59 +1,35 @@
 from __future__ import annotations
 
-import numpy as np
+from functools import cached_property
+from typing import Callable
 
+import numpy as np
+from formulaic import model_matrix
 from pandas import DataFrame
 
-from typing import Callable
-from functools import cached_property
-
-from formulaic import model_matrix
-
-from . import plot as attgt_plot
-
-from .mboot import get_cluster_groups
-from .aggregate import _AggregateGT, get_weights
-
-from .utility import (preprocess_fit_cluster_arg,
-                      preprocess_base_delta,
-                      preprocess_est_method,
-
-                      universal_base_period,
-                      varying_base_period,
-
-                      wald_pre_test,
-
-                      filter_gt_dict,
-
-                      extract_dict_ntl,
-                      extract_dict_ntl_for_difference,
-                      output_dict_to_dataframe
-                      )
-
-from .difference import (parse_split_sample,
-                         get_ds_masks,
-                         preprocess_difference,
-                         difference_ntl_to_dataframe,
-                         _Difference)
-
-from .attgt_cal import get_att_gt, get_standard_errors
-
-from ..did.did_cal import get_method_tuple, did_cal_funcs
-
+from ..did.did_cal import did_cal_funcs, get_method_tuple
+from ..tools.panel_utility import (delta_col_to_create,
+                                   find_time_varying_covars, is_panel_balanced)
 from ..tools.panel_validation import _ValiDIData
-
-from ..tools.panel_utility import (find_time_varying_covars,
-                                   is_panel_balanced,
-                                   delta_col_to_create)
-
 from ..tools.utility import capitalize_details
+from . import plot as attgt_plot
+from .aggregate import _AggregateGT, get_weights
+from .attgt_cal import get_att_gt, get_standard_errors
+from .difference import (_Difference, difference_ntl_to_dataframe,
+                         get_ds_masks, parse_split_sample,
+                         preprocess_difference)
+from .mboot import get_cluster_groups
+from .utility import (extract_dict_ntl, extract_dict_ntl_for_difference,
+                      filter_gt_dict, output_dict_to_dataframe,
+                      preprocess_base_delta, preprocess_est_method,
+                      preprocess_fit_cluster_arg, universal_base_period,
+                      varying_base_period, wald_pre_test)
 
-
-__all__ = ['ATTgt']
+__all__ = ["ATTgt"]
 
 # allow for spelling errors after the 3rd letter
-base_period_3l_map = {'var': 'varying', 'uni': 'universal'}
-control_group_3l_map = {'not': 'not_yet_treated', 'nev': 'never_treated'}
+base_period_3l_map = {"var": "varying", "uni": "universal"}
+control_group_3l_map = {"not": "not_yet_treated", "nev": "never_treated"}
 
 
 class ATTgt:
@@ -110,24 +86,23 @@ class ATTgt:
 
     data = _ValiDIData()
 
-    def __init__(self,
-                 data: DataFrame,
-
-                 cohort_name: str,
-                 strata_name: str = None,  # extra treatment information
-
-                 base_period: str = 'varying',  # or 'universal'
-                 anticipation: int = 0,
-
-                 freq: str = None,
-                 ):
+    def __init__(
+        self,
+        data: DataFrame,
+        cohort_name: str,
+        strata_name: str = None,  # extra treatment information
+        base_period: str = "varying",  # or 'universal'
+        anticipation: int = 0,
+        freq: str = None,
+    ):
 
         # from now on 'base_period' is called 'base_period_type'
         self.base_period_type = base_period_3l_map.get(base_period[:3])
 
-        if self.base_period_type not in ['varying', 'universal']:
-            raise ValueError("'base_period' must be either set to either "
-                             "'varying' or 'universal'")
+        if self.base_period_type not in ["varying", "universal"]:
+            raise ValueError(
+                "'base_period' must be either set to either " "'varying' or 'universal'"
+            )
 
         self.cohort_name = cohort_name
         self.strata_name = strata_name
@@ -149,7 +124,7 @@ class ATTgt:
 
         self._x_covariates = []
         self._time_varying_x = []  # time varying covariates
-        self._base_delta = 'base'
+        self._base_delta = "base"
         self._x_base_delta = {}
 
         self._weights = None
@@ -167,7 +142,7 @@ class ATTgt:
         self._difference_inst = None
         self._difference_ntl = None
 
-        self._agg_types = ['simple', 'cohort', 'event', 'time']
+        self._agg_types = ["simple", "cohort", "event", "time"]
 
         self._aggregate_locals = None
         self._boot_iterations_difference = None
@@ -178,7 +153,9 @@ class ATTgt:
 
     @property
     def _times(self):
-        return np.array(sorted(self.data.index.get_level_values(self._time_name).unique()))
+        return np.array(
+            sorted(self.data.index.get_level_values(self._time_name).unique())
+        )
 
     @property
     def _cohorts(self):
@@ -190,11 +167,10 @@ class ATTgt:
         if self.strata_name is not None:
             strata = []
 
-            strata_are_str = False
             for d in sorted(self.data[self.strata_name].dropna().unique()):
 
                 if isinstance(d, str):
-                    strata_are_str = True
+                    pass
                 elif int(d) == d:
                     d = int(d)
                 else:
@@ -207,7 +183,11 @@ class ATTgt:
     @cached_property
     def _feasible_gt(self):
         """time, cohort, stratum"""
-        info = [self.cohort_name, self.strata_name] if self.strata_name else [self.cohort_name]
+        info = (
+            [self.cohort_name, self.strata_name]
+            if self.strata_name
+            else [self.cohort_name]
+        )
 
         feasible = (
             self.data[info]
@@ -228,35 +208,41 @@ class ATTgt:
         ``cohort``, ``base_period``, ``time``, (``stratum``)
         """
 
-        if self.base_period_type == 'varying':
+        if self.base_period_type == "varying":
             cbt = varying_base_period(
                 cohort_ar=self._cohorts,
                 time_ar=self._times,
-                anticipation=self.anticipation
+                anticipation=self.anticipation,
             )
 
-        if self.base_period_type == 'universal':
+        if self.base_period_type == "universal":
             cbt = universal_base_period(
                 cohort_ar=self._cohorts,
                 time_ar=self._times,
-                anticipation=self.anticipation
+                anticipation=self.anticipation,
             )
 
         if self.strata_name is None:
             if feasible:
-                return [d for d in cbt
-                        if (d['time'], d['cohort']) in self._feasible_gt
-                        or (d['base_period'] == d['time'])]
+                return [
+                    d
+                    for d in cbt
+                    if (d["time"], d["cohort"]) in self._feasible_gt
+                    or (d["base_period"] == d["time"])
+                ]
 
             return cbt
 
         else:
-            cbtg = [{**d, 'stratum': xt} for xt in self._strata for d in cbt]
+            cbtg = [{**d, "stratum": xt} for xt in self._strata for d in cbt]
 
             if feasible:
-                return [d for d in cbtg
-                        if (d['time'], d['cohort'], d['stratum']) in self._feasible_gt
-                        or (d['base_period'] == d['time'])]
+                return [
+                    d
+                    for d in cbtg
+                    if (d["time"], d["cohort"], d["stratum"]) in self._feasible_gt
+                    or (d["base_period"] == d["time"])
+                ]
 
             return cbtg
 
@@ -267,11 +253,13 @@ class ATTgt:
         if is_panel:  # both balance and unbalanced will be passed to p2c
             # keep Xs separate to look for time varying covariates (needed for base-delta)
             y_matrix, self._data_matrix = model_matrix(
-                spec=f'{self._y} ~ {self._x_formula}', data=self.data)
+                spec=f"{self._y} ~ {self._x_formula}", data=self.data
+            )
 
         else:
             self._data_matrix = model_matrix(
-                spec=f'{self._y} + {self._x_formula}', data=self.data)
+                spec=f"{self._y} + {self._x_formula}", data=self.data
+            )
 
         self._data_matrix = DataFrame(self._data_matrix)
 
@@ -279,42 +267,44 @@ class ATTgt:
 
         return y_matrix
 
-    def _preprocess_covariates(self,
-                               is_panel: bool,
-                               base_delta: str | list | dict,
-                               y_matrix) -> None:
+    def _preprocess_covariates(
+        self, is_panel: bool, base_delta: str | list | dict, y_matrix
+    ) -> None:
 
         if is_panel:  # y_matrix is available only if is_panel
 
-            self._x_covariates = list(self._data_matrix)  # includes y if in specification
+            self._x_covariates = list(
+                self._data_matrix
+            )  # includes y if in specification
 
             self._x_base, self._x_delta = self._x_covariates, []
 
-            if ('delta' in base_delta) or isinstance(base_delta, dict):
+            if ("delta" in base_delta) or isinstance(base_delta, dict):
 
                 # identify time varying Xs (only if needed: when delta is requested)
                 self._time_varying_x = find_time_varying_covars(
                     data=self._data_matrix,
                     # do not include y (in case it is controlled for)
-                    covariates=[c for c in list(self._data_matrix) if c != self._y]
+                    covariates=[c for c in list(self._data_matrix) if c != self._y],
                 )
 
                 self._x_covariates, self._x_base, self._x_delta = preprocess_base_delta(
                     base_delta=base_delta,
                     x_covariates=self._x_covariates,
-                    time_varying_x=self._time_varying_x
+                    time_varying_x=self._time_varying_x,
                 )
 
                 delta_to_create, _ = delta_col_to_create(
-                    x_delta=self._x_delta, x_base=self._x_base)
+                    x_delta=self._x_delta, x_base=self._x_base
+                )
 
                 if delta_to_create:  # these will be created by p2c later
-                    self._x_covariates.extend([f'delta_{c}' for c in delta_to_create])
+                    self._x_covariates.extend([f"delta_{c}" for c in delta_to_create])
 
             # need to copy y as delta_y in case y is among the controls (as base period y),
             # if y is among the controls it is added by x_formula to _data_matrix
-            self._data_matrix[f'delta_{self._y}'] = y_matrix
-            self._y = f'delta_{self._y}'
+            self._data_matrix[f"delta_{self._y}"] = y_matrix
+            self._y = f"delta_{self._y}"
 
         else:  # repeated_cross_section (or panel as rc, is_panel is set to False)
 
@@ -322,11 +312,11 @@ class ATTgt:
             self._x_covariates = [x for x in list(self._data_matrix) if x != self._y]
             self._x_base, self._x_delta = self._x_covariates, []
 
-        self._x_base_delta = {'base': self._x_base, 'delta': self._x_delta}
+        self._x_base_delta = {"base": self._x_base, "delta": self._x_delta}
 
-    def _create_result_dict(self,
-                            split_sample_by: Callable | str | dict | None
-                            ) -> None:
+    def _create_result_dict(
+        self, split_sample_by: Callable | str | dict | None
+    ) -> None:
         """
         creates self._result_dict dictionary
 
@@ -341,11 +331,13 @@ class ATTgt:
         if isinstance(split_sample_by, str):
             self._result_dict = parse_split_sample(
                 data=(
-                    self.data if not self._dropped_nas_flag else
-                    self.data[split_sample_by]
-                    .loc[lambda x: x.index.isin(self._data_matrix.index)]
+                    self.data
+                    if not self._dropped_nas_flag
+                    else self.data[split_sample_by].loc[
+                        lambda x: x.index.isin(self._data_matrix.index)
+                    ]
                 ),
-                split_sample_by=split_sample_by
+                split_sample_by=split_sample_by,
             )
 
         elif isinstance(split_sample_by, Callable):
@@ -355,21 +347,22 @@ class ATTgt:
             # need a way to get the col name: possibly change input to dict: {'name': callable}
             self._result_dict = parse_split_sample(
                 data=(
-                    self.data if not self._dropped_nas_flag else
-                    self.data.loc[lambda x: x.index.isin(self._data_matrix.index)]
+                    self.data
+                    if not self._dropped_nas_flag
+                    else self.data.loc[lambda x: x.index.isin(self._data_matrix.index)]
                 ),
-                split_sample_by=split_sample_by
+                split_sample_by=split_sample_by,
             )
 
         else:  # self._result_dict is None
-            self._result_dict = {'full_sample': {}}
+            self._result_dict = {"full_sample": {}}
 
     def _get_clusters_for_difference(
-            self,
-            cluster_var: list | str | None,
-            difference_samples: list,
-            data_mask: np.ndarray,
-            iterate_samples: list
+        self,
+        cluster_var: list | str | None,
+        difference_samples: list,
+        data_mask: np.ndarray,
+        iterate_samples: list,
     ) -> np.ndarray | dict:
 
         # clusters
@@ -379,52 +372,45 @@ class ATTgt:
             if difference_samples:
                 cluster_groups = get_cluster_groups(
                     data=self._data_matrix[cluster_var].loc[data_mask],
-                    cluster_var=cluster_var
+                    cluster_var=cluster_var,
                 )
 
             elif iterate_samples:
                 cluster_groups = {
                     s: get_cluster_groups(
                         data=self._data_matrix[cluster_var].loc[
-                            self._result_dict[s]['sample_mask']],
-                        cluster_var=cluster_var
+                            self._result_dict[s]["sample_mask"]
+                        ],
+                        cluster_var=cluster_var,
                     )
                     for s in self.sample_names
                 }
 
             else:  # main case, no samples splits or treat strata
                 cluster_groups = get_cluster_groups(
-                    data=self._data_matrix[cluster_var],
-                    cluster_var=cluster_var
+                    data=self._data_matrix[cluster_var], cluster_var=cluster_var
                 )
 
         return cluster_groups
 
     # att gt
-    def fit(self,
-            formula: str,
-            weights_name: str = None,
-
-            control_group: str = 'never_treated',
-            base_delta: str | list | dict = 'base',
-
-            est_method: str | Callable = 'dr',
-            as_repeated_cross_section: bool = None,
-
-            boot_iterations: int = 0,  # if > 0 mboot will be called
-            random_state: int = None,
-
-            alpha: float = 0.05,
-            cluster_var: list | str = None,
-
-            split_sample_by: Callable | str | dict = None,
-
-            n_jobs: int = 1,
-            backend: str = 'loky',
-
-            progress_bar: bool = True,
-
-            ) -> DataFrame:
+    def fit(
+        self,
+        formula: str,
+        weights_name: str = None,
+        control_group: str = "never_treated",
+        base_delta: str | list | dict = "base",
+        est_method: str | Callable = "dr",
+        as_repeated_cross_section: bool = None,
+        boot_iterations: int = 0,  # if > 0 mboot will be called
+        random_state: int = None,
+        alpha: float = 0.05,
+        cluster_var: list | str = None,
+        split_sample_by: Callable | str | dict = None,
+        n_jobs: int = 1,
+        backend: str = "loky",
+        progress_bar: bool = True,
+    ) -> DataFrame:
         """
         Computes the cohort-time-(stratum) average treatment effects:
 
@@ -572,8 +558,8 @@ class ATTgt:
 
         # ------------------ some pre processing -----------------------
 
-        if '~' in formula:
-            y, x_formula = formula.split('~')
+        if "~" in formula:
+            y, x_formula = formula.split("~")
             y, x_formula = y.strip(), x_formula.strip()
         else:
             y, x_formula = formula, None
@@ -581,18 +567,20 @@ class ATTgt:
         self._y = y
         self._y_name = y
 
-        self._x_formula = '1' if x_formula is None else x_formula
+        self._x_formula = "1" if x_formula is None else x_formula
 
         self._control_group = control_group_3l_map.get(control_group[:3])
 
-        if self._no_never_treated_flag and self._control_group == 'never_treated':
-            raise ValueError('there is no never treated entity. '
-                             'use not_yet_treated as control cohort')
+        if self._no_never_treated_flag and self._control_group == "never_treated":
+            raise ValueError(
+                "there is no never treated entity. "
+                "use not_yet_treated as control cohort"
+            )
 
         # --------------------------------------------------------------
 
         is_panel = self.is_panel
-        is_balanced_panel = getattr(self, 'is_balanced_panel', False)
+        is_balanced_panel = getattr(self, "is_balanced_panel", False)
 
         # True: default repeated cs for unbalanced panel
         self._as_rcs = as_repeated_cross_section
@@ -611,9 +599,7 @@ class ATTgt:
         # todo: if balance panel if filter? should already be done if balance 2*2
         filter_gt = None
         if filter_gt is not None:
-            group_time = filter_gt_dict(
-                group_time=group_time,
-                filter_gt=filter_gt)
+            group_time = filter_gt_dict(group_time=group_time, filter_gt=filter_gt)
 
         # -------------------- cluster_var -----------------------------
 
@@ -621,7 +607,7 @@ class ATTgt:
         self._cluster_var_fit, self._cluster_by_entity = preprocess_fit_cluster_arg(
             cluster_var=cluster_var,
             entity_name=self._entity_name,
-            true_rc=true_repeated_cross_section
+            true_rc=true_repeated_cross_section,
         )
 
         # ----------------- data matrix from formula -------------------
@@ -635,22 +621,24 @@ class ATTgt:
         # --------------------- time-varying Xs ------------------------
 
         self._preprocess_covariates(
-            is_panel=is_panel, base_delta=base_delta, y_matrix=y_matrix)
+            is_panel=is_panel, base_delta=base_delta, y_matrix=y_matrix
+        )
 
         # ------------ keep additional cols in data_matrix -------------
 
         add_cols = [self.cohort_name, self.strata_name, weights_name, cluster_var]
         add_cols = [c for c in add_cols if c is not None]
 
-        self._data_matrix[add_cols] = (
-            self.data[add_cols].loc[lambda x: x.index.isin(self._data_matrix.index)])
+        self._data_matrix[add_cols] = self.data[add_cols].loc[
+            lambda x: x.index.isin(self._data_matrix.index)
+        ]
 
         # ------------------------ weights -----------------------------
 
         self._weights_name = weights_name
         if weights_name is None:
-            self._data_matrix['_w'] = 1
-            self._weights_name = '_w'
+            self._data_matrix["_w"] = 1
+            self._weights_name = "_w"
 
         # ----------------------- _result_dict -------------------------
 
@@ -662,7 +650,8 @@ class ATTgt:
             est_method, est_method_pscore = preprocess_est_method(est_method=est_method)
 
             self._method_tuple = get_method_tuple(
-                est_method, est_method_pscore, 'panel' if is_panel else 'rc')
+                est_method, est_method_pscore, "panel" if is_panel else "rc"
+            )
 
             att_function_ct = did_cal_funcs[self._method_tuple]  # select did est method
         elif isinstance(est_method, Callable):
@@ -670,7 +659,7 @@ class ATTgt:
             att_function_ct = est_method
 
         else:
-            raise ValueError('invalid est_method')
+            raise ValueError("invalid est_method")
 
         # --------------------------------------------------------------
 
@@ -685,47 +674,43 @@ class ATTgt:
             if cluster_var:
                 cluster_groups = get_cluster_groups(
                     data=(
-                        self._data_matrix[cluster_var] if s == 'full_sample'
-                        else self._data_matrix[cluster_var]
-                        .loc[self._result_dict[s]['sample_mask']]
+                        self._data_matrix[cluster_var]
+                        if s == "full_sample"
+                        else self._data_matrix[cluster_var].loc[
+                            self._result_dict[s]["sample_mask"]
+                        ]
                     ),
-                    cluster_var=cluster_var
+                    cluster_var=cluster_var,
                 )
 
             # att
             res = get_att_gt(
                 data=(
-                    self._data_matrix if s == 'full_sample'
-                    else self._data_matrix[self._result_dict[s]['sample_mask']].copy()
+                    self._data_matrix
+                    if s == "full_sample"
+                    else self._data_matrix[self._result_dict[s]["sample_mask"]].copy()
                 ),
-
                 y_name=self._y,
                 cohort_name=self.cohort_name,
                 strata_name=self.strata_name,
-
                 group_time=group_time,
-
                 weights_name=self._weights_name,
-
                 control_group=self._control_group,
                 anticipation=self.anticipation,
-
                 x_covariates=self._x_covariates,
                 x_base=self._x_base,
                 x_delta=self._x_delta,
-
                 is_panel=is_panel,
                 is_balanced_panel=is_balanced_panel,
                 cluster_by_entity=self._cluster_by_entity,
-
                 att_function_ct=att_function_ct,
-
                 backend_ct=backend,
                 n_jobs_ct=n_jobs,
-
                 progress_bar=progress_bar,
-                sample_name=s if s != 'full_sample' else None,  # just for progress_bar
-                release_workers=(not bool(boot_iterations) and (s_idx + 1 == n_sample_names))
+                sample_name=s if s != "full_sample" else None,  # just for progress_bar
+                release_workers=(
+                    not bool(boot_iterations) and (s_idx + 1 == n_sample_names)
+                ),
             )
 
             # standard errors & ci/cbands
@@ -737,36 +722,32 @@ class ATTgt:
                 random_state=random_state,
                 n_jobs_boot=n_jobs,
                 backend_boot=backend,
-
                 progress_bar=progress_bar,
-                sample_name=s if s != 'full_sample' else None,
-                release_workers=s_idx == n_sample_names
+                sample_name=s if s != "full_sample" else None,
+                release_workers=s_idx == n_sample_names,
             )
 
-            self._result_dict[s]['ATTgt_ntl'] = res
+            self._result_dict[s]["ATTgt_ntl"] = res
 
         self._fit_res = output_dict_to_dataframe(
             extract_dict_ntl(self._result_dict),
             stratum=bool(self._strata),
-            date_map=self._map_datetime
+            date_map=self._map_datetime,
         )
         return self._fit_res
 
-    def aggregate(self,
-                  type_of_aggregation: str | None = 'simple',
-                  overall: bool = False,
-                  difference: bool | list | dict[str, list] = False,
-
-                  alpha: float = 0.05,
-                  cluster_var: list | str = None,
-
-                  boot_iterations: int = 0,
-                  random_state: int = None,
-
-                  n_jobs: int = 1,
-                  backend: str = 'loky',
-
-                  ) -> DataFrame:
+    def aggregate(
+        self,
+        type_of_aggregation: str | None = "simple",
+        overall: bool = False,
+        difference: bool | list | dict[str, list] = False,
+        alpha: float = 0.05,
+        cluster_var: list | str = None,
+        boot_iterations: int = 0,
+        random_state: int = None,
+        n_jobs: int = 1,
+        backend: str = "loky",
+    ) -> DataFrame:
         """
         Aggregate the ATTgt
 
@@ -872,21 +853,26 @@ class ATTgt:
         A DataFrame with the requested aggregation
 
         """
-        filter_gt = None  # todo
 
         # --------------------------------------------------------------
 
         if self._result_dict is None:
-            raise RuntimeError('call fit() to estimate group-time ATTs before calling aggregate()')
+            raise RuntimeError(
+                "call fit() to estimate group-time ATTs before calling aggregate()"
+            )
 
         if type_of_aggregation not in self._agg_types and not difference:
             return self._fit_res
 
-        if isinstance(cluster_var, str):  # entity cluster is automatic, exclude from list
-            cluster_var = [c for c in [cluster_var] if c != self._data_matrix.index.names[0]]
+        if isinstance(
+            cluster_var, str
+        ):  # entity cluster is automatic, exclude from list
+            cluster_var = [
+                c for c in [cluster_var] if c != self._data_matrix.index.names[0]
+            ]
 
         if isinstance(difference, dict):
-            correct = {'d': 'strata', 's': 'sample_names'}
+            correct = {"d": "strata", "s": "sample_names"}
             for k, v in [(k[0], k) for k in difference.keys()]:
                 difference[correct[k]] = difference.pop(v)
 
@@ -894,8 +880,9 @@ class ATTgt:
 
         # decide when to un-cache the aggregation class
         _locals_aggregate = tuple(
-            (k, v) for k, v in locals().items()
-            if k not in ['self', 'type_of_aggregation', 'overall']
+            (k, v)
+            for k, v in locals().items()
+            if k not in ["self", "type_of_aggregation", "overall"]
         )
 
         if _locals_aggregate != self._aggregate_locals:
@@ -916,45 +903,49 @@ class ATTgt:
 
                 for s in self.sample_names:
 
-                    if self._result_dict[s].get('weights') is None:
-                        self._result_dict[s]['weights'] = get_weights(
+                    if self._result_dict[s].get("weights") is None:
+                        self._result_dict[s]["weights"] = get_weights(
                             data=(
-                                self._data_matrix[[self._weights_name]] if s == 'full_sample'
-                                else self._data_matrix[[self._weights_name]]
-                                .loc[self._result_dict[s]['sample_mask']]
+                                self._data_matrix[[self._weights_name]]
+                                if s == "full_sample"
+                                else self._data_matrix[[self._weights_name]].loc[
+                                    self._result_dict[s]["sample_mask"]
+                                ]
                             ),
                             weights_name=self._weights_name,
-                            entity_level=self._cluster_by_entity
+                            entity_level=self._cluster_by_entity,
                         )
 
                     cluster_groups = None
                     if cluster_var:
                         cluster_groups = get_cluster_groups(
                             data=(
-                                self._data_matrix[cluster_var] if s == 'full_sample'
-                                else self._data_matrix[cluster_var]
-                                .loc[self._result_dict[s]['sample_mask']]
+                                self._data_matrix[cluster_var]
+                                if s == "full_sample"
+                                else self._data_matrix[cluster_var].loc[
+                                    self._result_dict[s]["sample_mask"]
+                                ]
                             ),
-                            cluster_var=cluster_var
+                            cluster_var=cluster_var,
                         )
 
                     # save the instance of the aggregation class in the result dict
-                    self._result_dict[s]['aggregate_inst'] = _AggregateGT(
-                        ntl=self._result_dict[s]['ATTgt_ntl'],
-                        weights=self._result_dict[s]['weights'],
+                    self._result_dict[s]["aggregate_inst"] = _AggregateGT(
+                        ntl=self._result_dict[s]["ATTgt_ntl"],
+                        weights=self._result_dict[s]["weights"],
                         strata=self._strata,
                         cluster_groups=cluster_groups,
                         alpha=alpha,
                         boot_iterations=boot_iterations,
                         random_state=random_state,
                         backend_boot=backend,
-                        n_jobs_boot=n_jobs
+                        n_jobs_boot=n_jobs,
                     )
 
             # ------ perform aggregation within _Aggregategt ----------
 
             for s in self.sample_names:
-                self._result_dict[s]['aggregate_inst'].aggregate(
+                self._result_dict[s]["aggregate_inst"].aggregate(
                     type_of_aggregation=type_of_aggregation,
                     overall=overall,
                 )
@@ -972,7 +963,7 @@ class ATTgt:
             difference_between = preprocess_difference(
                 difference=difference,
                 sample_names=self._sample_names,
-                strata=self._strata
+                strata=self._strata,
             )
 
             # if isinstance(difference_between, tuple):
@@ -980,12 +971,14 @@ class ATTgt:
 
             # else:  # dict
             difference_strata, iterate_samples = [
-                difference_between.get(key) for key in
-                ['difference_strata', 'iterate_samples']]
+                difference_between.get(key)
+                for key in ["difference_strata", "iterate_samples"]
+            ]
 
             difference_samples, iterate_strata = [
-                difference_between.get(key) for key in
-                ['difference_samples', 'iterate_strata']]
+                difference_between.get(key)
+                for key in ["difference_samples", "iterate_strata"]
+            ]
 
             data_mask, sample_masks = None, None
             if difference_samples:  # if the difference is between samples, get masks
@@ -996,26 +989,23 @@ class ATTgt:
                     result_dict=self._result_dict,
                     difference=difference_samples,
                     entity_index=self._data_matrix.index.get_level_values(0),
-                    cluster_by_entity=self._cluster_by_entity
+                    cluster_by_entity=self._cluster_by_entity,
                 )
 
             cluster_groups = self._get_clusters_for_difference(
                 cluster_var=cluster_var,
                 difference_samples=difference_samples,
                 data_mask=data_mask,
-                iterate_samples=iterate_samples
+                iterate_samples=iterate_samples,
             )
 
             # set up data for difference
             diff_pairs_ntls = extract_dict_ntl_for_difference(
                 result_dict=self._result_dict,
-
                 type_of_aggregation=type_of_aggregation,
                 overall=overall,
-
                 difference_samples=difference_samples,
                 iterate_strata=iterate_strata,
-
                 difference_strata=difference_strata,
                 iterate_samples=iterate_samples,
             )
@@ -1031,10 +1021,8 @@ class ATTgt:
             # get difference between estimates
             self._difference_ntl = self._difference_inst.get_difference(
                 diff_pairs_ntls=diff_pairs_ntls,
-
                 sample_masks=sample_masks,  # need it when subtracting two samples
                 cluster_groups=cluster_groups,
-
                 type_of_aggregation=type_of_aggregation,
                 overall=overall,
                 iterating_samples=bool(iterate_samples)
@@ -1053,13 +1041,11 @@ class ATTgt:
             result_dict=self._result_dict,
             type_of_aggregation=type_of_aggregation,
             overall=overall,
-            sample_names=self.sample_names
+            sample_names=self.sample_names,
         )
 
         output = output_dict_to_dataframe(
-            output,
-            stratum=bool(self._strata),
-            date_map=self._map_datetime
+            output, stratum=bool(self._strata), date_map=self._map_datetime
         )
 
         return output
@@ -1092,14 +1078,14 @@ class ATTgt:
             return None
 
         if self.sample_names is None:
-            raise RuntimeError('.fit() must be called before accessing Wald pre-test')
+            raise RuntimeError(".fit() must be called before accessing Wald pre-test")
 
         _wald_pre_test = {}
         for s in self.sample_names:
             res = self.results(sample_name=s)
             res = wald_pre_test(res)
 
-            if s == 'full_sample':
+            if s == "full_sample":
                 return res
 
             else:
@@ -1107,47 +1093,50 @@ class ATTgt:
 
         return _wald_pre_test
 
-    def estimation_details(self,
-                           type_of_aggregation: str = None):
+    def estimation_details(self, type_of_aggregation: str = None):
 
         details = {
-            'anticipation': self.anticipation,
-            'base_period_type': self.base_period_type,
-            'is_panel': self.is_panel,
+            "anticipation": self.anticipation,
+            "base_period_type": self.base_period_type,
+            "is_panel": self.is_panel,
         }
 
         if self.is_panel:
-            details.update({
-                'is_balanced_panel': getattr(self, 'is_balanced_panel', False)
-            })
+            details.update(
+                {"is_balanced_panel": getattr(self, "is_balanced_panel", False)}
+            )
 
         if self._result_dict is not None:
-            details.update({
-                'as_repeated_cross_section': self._as_rcs,
-                'control_group': self._control_group,
-                'formula': f'{self._y_name} ~ {self._x_formula}',
-                'cluster_by_entity': self._cluster_by_entity,
-            })
+            details.update(
+                {
+                    "as_repeated_cross_section": self._as_rcs,
+                    "control_group": self._control_group,
+                    "formula": f"{self._y_name} ~ {self._x_formula}",
+                    "cluster_by_entity": self._cluster_by_entity,
+                }
+            )
 
             if not self._as_rcs and self.is_panel:
-                details.update({
-                    'base_delta': self._x_base_delta,
-                })
+                details.update(
+                    {
+                        "base_delta": self._x_base_delta,
+                    }
+                )
 
         if type_of_aggregation is None:
-            details.update({
-            })
+            details.update({})
 
         return details
 
-    def results(self,
-                type_of_aggregation: str = None,
-                overall: bool = False,
-                difference: bool = False,
-                # sample_name: str = None,
-                to_dataframe: bool = True,
-                add_info: bool = False
-                ):
+    def results(
+        self,
+        type_of_aggregation: str = None,
+        overall: bool = False,
+        difference: bool = False,
+        # sample_name: str = None,
+        to_dataframe: bool = True,
+        add_info: bool = False,
+    ):
         """
         provides easy access to cached results.
         this method must be called after fit and/or aggregate depending
@@ -1195,22 +1184,25 @@ class ATTgt:
         """
 
         if self._result_dict is None:
-            raise RuntimeError('.fit() must be called before accessing the results')
+            raise RuntimeError(".fit() must be called before accessing the results")
 
         if type_of_aggregation in self._agg_types:  # ['cohort', 'event', ...]
 
             if self._aggregate_cflag is None:
-                raise RuntimeError('.aggregate() must be called before accessing the results')
+                raise RuntimeError(
+                    ".aggregate() must be called before accessing the results"
+                )
 
         if difference:
             if self._difference_ntl is None:
-                raise RuntimeError('.aggregate(difference=) '
-                                   'must be called before accessing the results')
+                raise RuntimeError(
+                    ".aggregate(difference=) "
+                    "must be called before accessing the results"
+                )
 
             if to_dataframe:
                 output = difference_ntl_to_dataframe(
-                    ntl=self._difference_ntl,
-                    date_map=self._map_datetime
+                    ntl=self._difference_ntl, date_map=self._map_datetime
                 )
                 return output
 
@@ -1222,7 +1214,7 @@ class ATTgt:
             result_dict=self._result_dict,
             type_of_aggregation=type_of_aggregation,
             overall=overall,
-            sample_names=self.sample_names
+            sample_names=self.sample_names,
         )
 
         if to_dataframe:
@@ -1230,21 +1222,22 @@ class ATTgt:
                 output,
                 stratum=bool(self._strata),
                 date_map=self._map_datetime,
-                add_info=add_info
+                add_info=add_info,
             )
             return output
 
         return output
 
-    def plot(self,
-             type_of_aggregation: str = None,
-             overall: bool = False,
-             difference: bool = False,  # I need this mainly to retrieve the correct
-             # sample_name: str = None,
-             estimation_details: bool = True,
-             estimate_in_x_axis: bool = False,
-             **plotting_parameters
-             ):
+    def plot(
+        self,
+        type_of_aggregation: str = None,
+        overall: bool = False,
+        difference: bool = False,  # I need this mainly to retrieve the correct
+        # sample_name: str = None,
+        estimation_details: bool = True,
+        estimate_in_x_axis: bool = False,
+        **plotting_parameters,
+    ):
         """
         Parameters
         ----------
@@ -1303,7 +1296,8 @@ class ATTgt:
             if estimation_details:
                 estimation_details = capitalize_details(
                     estimation_details=self.estimation_details(
-                        type_of_aggregation=type_of_aggregation)
+                        type_of_aggregation=type_of_aggregation
+                    )
                 )
 
         df = self.results(
@@ -1312,28 +1306,28 @@ class ATTgt:
             difference=difference,
             # sample_name=sample_name,
             to_dataframe=True,
-            add_info=not bool(type_of_aggregation)
+            add_info=not bool(type_of_aggregation),
         )
 
         if type_of_aggregation is None:
             return attgt_plot.plot_att_gt(
                 df=df,
                 plotting_parameters=plotting_parameters,
-                estimation_details=estimation_details
+                estimation_details=estimation_details,
             )
 
-        elif type_of_aggregation == 'simple' or overall:
+        elif type_of_aggregation == "simple" or overall:
             return attgt_plot.plot_overall_agg(
                 df=df,
                 plotting_parameters=plotting_parameters,
-                estimation_details=estimation_details
+                estimation_details=estimation_details,
             )
 
         elif not overall:
 
-            plot_func = getattr(attgt_plot, f'plot_{type_of_aggregation}_agg')
+            plot_func = getattr(attgt_plot, f"plot_{type_of_aggregation}_agg")
             return plot_func(
                 df=df,
                 plotting_parameters=plotting_parameters,
-                estimation_details=estimation_details
+                estimation_details=estimation_details,
             )

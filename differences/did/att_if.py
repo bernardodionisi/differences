@@ -1,19 +1,22 @@
 # computing ATT (g,t) and influence functions
+from __future__ import annotations
 
 import numpy as np
-
+from numpy import ndarray
 
 # ------------------------- drdid traditional --------------------------
 
 
-def dr_traditional_panel_att_if(endog: np.ndarray,  # [:, None]
-                                exog: np.ndarray,
-                                treated: np.ndarray,  # [:, None]
-                                weights: np.ndarray,  # [:, None]
-                                out_delta: np.ndarray,  # [:, None]
-                                ps_fit: np.ndarray,  # [:, None]
-                                pscore_cov_params: np.ndarray,
-                                **kwargs):
+def dr_traditional_panel_att_if(
+    endog: ndarray,  # [:, None]
+    exog: ndarray,
+    treated: ndarray,  # [:, None]
+    weights: ndarray,  # [:, None]
+    out_delta: ndarray,  # [:, None]
+    ps_fit: ndarray,  # [:, None]
+    pscore_cov_params: ndarray,
+    **kwargs,
+):
     n_obs = exog.shape[0]
 
     # ------------------------------------------------------------------
@@ -54,7 +57,7 @@ def dr_traditional_panel_att_if(endog: np.ndarray,  # [:, None]
     # now, the influence function of the "treat" component
     # leading term of the influence function: no estimation effect
 
-    inf_treat_1 = (dr_att_treat - w_treat * eta_treat)
+    inf_treat_1 = dr_att_treat - w_treat * eta_treat
 
     # Estimation effect from beta hat
     # Derivative matrix (k x 1 vector)
@@ -71,7 +74,7 @@ def dr_traditional_panel_att_if(endog: np.ndarray,  # [:, None]
 
     # now, get the influence function of control component
     # Leading term of the influence function: no estimation effect
-    inf_cont_1 = (dr_att_cont - w_cont * eta_cont)
+    inf_cont_1 = dr_att_cont - w_cont * eta_cont
 
     # Estimation effect from gamma hat (pscore)
     # Derivative matrix (k x 1 vector)
@@ -95,18 +98,21 @@ def dr_traditional_panel_att_if(endog: np.ndarray,  # [:, None]
     return dr_att, dr_att_inf_func
 
 
-def dr_traditional_rc_att_if(endog: np.ndarray,  # [:, None]
-                             exog: np.ndarray,
-                             treated: np.ndarray,  # [:, None]
-                             weights: np.ndarray,  # [:, None]
-                             out_delta: np.ndarray,  # n x 4
-                             ps_fit: np.ndarray,  # [:, None]
-                             pscore_cov_params: np.ndarray,
-                             post: np.ndarray,  # [:, None]
-                             **kwargs):
+def dr_traditional_rc_att_if(
+    endog: ndarray,  # [:, None]
+    exog: ndarray,
+    treated: ndarray,  # [:, None]
+    weights: ndarray,  # [:, None]
+    out_delta: ndarray,  # n x 4
+    ps_fit: ndarray,  # [:, None]
+    pscore_cov_params: ndarray,
+    post: ndarray,  # [:, None]
+    **kwargs,
+):
     n_obs = exog.shape[0]
-    out_y_cont_pre, out_y_cont_post, \
-    out_y_treat_pre, out_y_treat_post = np.split(out_delta, 4, axis=1)
+    out_y_cont_pre, out_y_cont_post, out_y_treat_pre, out_y_treat_post = np.split(
+        out_delta, 4, axis=1
+    )
 
     # ------------------------------------------------------------------
 
@@ -152,9 +158,12 @@ def dr_traditional_rc_att_if(endog: np.ndarray,  # [:, None]
     att_dt0_pre = np.mean(eta_dt0_pre)
 
     # ATT estimator
-    dr_att = (att_treat_post - att_treat_pre) - (att_cont_post - att_cont_pre) + (
-            att_d_post - att_dt1_post) - (
-                     att_d_pre - att_dt0_pre)
+    dr_att = (
+        (att_treat_post - att_treat_pre)
+        - (att_cont_post - att_cont_pre)
+        + (att_d_post - att_dt1_post)
+        - (att_d_pre - att_dt0_pre)
+    )
 
     # ------------------------------------------------------------------
     # influence function
@@ -163,32 +172,40 @@ def dr_traditional_rc_att_if(endog: np.ndarray,  # [:, None]
     # first, the influence function of the nuisance functions
 
     # asymptotic linear representation of OLS parameters in pre-period, control group
-    asy_lin_rep_ols_pre = asymptotic_lin_repr(endog=endog,
-                                              exog=exog,
-                                              n_obs=n_obs,
-                                              weights=(weights * (1 - treated) * (1 - post)),
-                                              out_y=out_y_cont_pre)
+    asy_lin_rep_ols_pre = asymptotic_lin_repr(
+        endog=endog,
+        exog=exog,
+        n_obs=n_obs,
+        weights=(weights * (1 - treated) * (1 - post)),
+        out_y=out_y_cont_pre,
+    )
 
     # asymptotic linear representation of OLS parameters in post-period, control group
-    asy_lin_rep_ols_post = asymptotic_lin_repr(endog=endog,
-                                               exog=exog,
-                                               n_obs=n_obs,
-                                               weights=(weights * (1 - treated) * post),
-                                               out_y=out_y_cont_post)
+    asy_lin_rep_ols_post = asymptotic_lin_repr(
+        endog=endog,
+        exog=exog,
+        n_obs=n_obs,
+        weights=(weights * (1 - treated) * post),
+        out_y=out_y_cont_post,
+    )
 
     # asymptotic linear representation of OLS parameters in pre-period, treated
-    asy_lin_rep_ols_pre_treat = asymptotic_lin_repr(endog=endog,
-                                                    exog=exog,
-                                                    n_obs=n_obs,
-                                                    weights=(weights * treated * (1 - post)),
-                                                    out_y=out_y_treat_pre)
+    asy_lin_rep_ols_pre_treat = asymptotic_lin_repr(
+        endog=endog,
+        exog=exog,
+        n_obs=n_obs,
+        weights=(weights * treated * (1 - post)),
+        out_y=out_y_treat_pre,
+    )
 
     # asymptotic linear representation of OLS parameters in post-period, treated
-    asy_lin_rep_ols_post_treat = asymptotic_lin_repr(endog=endog,
-                                                     exog=exog,
-                                                     n_obs=n_obs,
-                                                     weights=(weights * treated * post),
-                                                     out_y=out_y_treat_post)
+    asy_lin_rep_ols_post_treat = asymptotic_lin_repr(
+        endog=endog,
+        exog=exog,
+        n_obs=n_obs,
+        weights=(weights * treated * post),
+        out_y=out_y_treat_post,
+    )
 
     # asymptotic linear representation of logit's beta's
     score_ps = weights * (treated - ps_fit) * exog
@@ -199,12 +216,18 @@ def dr_traditional_rc_att_if(endog: np.ndarray,  # [:, None]
     # now, the influence function of the "treat" component
     # leading term of the influence function: no estimation effect
     inf_treat_pre = eta_treat_pre - w_treat_pre * att_treat_pre / np.mean(w_treat_pre)
-    inf_treat_post = eta_treat_post - w_treat_post * att_treat_post / np.mean(w_treat_post)
+    inf_treat_post = eta_treat_post - w_treat_post * att_treat_post / np.mean(
+        w_treat_post
+    )
 
     # estimation effect from beta hat from post and pre-periods
     # derivative matrix (k x 1 vector)
-    M1_post = - np.mean(w_treat_post * post * exog, axis=0)[:, None] / np.mean(w_treat_post)
-    M1_pre = - np.mean(w_treat_pre * (1 - post) * exog, axis=0)[:, None] / np.mean(w_treat_pre)
+    M1_post = -np.mean(w_treat_post * post * exog, axis=0)[:, None] / np.mean(
+        w_treat_post
+    )
+    M1_pre = -np.mean(w_treat_pre * (1 - post) * exog, axis=0)[:, None] / np.mean(
+        w_treat_pre
+    )
 
     # now get the influence function related to the estimation
     # effect related to beta's
@@ -227,11 +250,13 @@ def dr_traditional_rc_att_if(endog: np.ndarray,  # [:, None]
 
     # derivative matrix (k x 1 vector)
 
-    M2_pre = (np.mean(w_cont_pre * (endog - out_y_cont - att_cont_pre) * exog, axis=0)[:, None]
-              / np.mean(w_cont_pre))
+    M2_pre = np.mean(w_cont_pre * (endog - out_y_cont - att_cont_pre) * exog, axis=0)[
+        :, None
+    ] / np.mean(w_cont_pre)
 
-    M2_post = (np.mean(w_cont_post * (endog - out_y_cont - att_cont_post) * exog, axis=0)[:, None]
-               / np.mean(w_cont_post))
+    M2_post = np.mean(
+        w_cont_post * (endog - out_y_cont - att_cont_post) * exog, axis=0
+    )[:, None] / np.mean(w_cont_post)
 
     # now the influence function related to estimation effect of pscores
     inf_cont_ps = asy_lin_rep_ps @ (M2_post - M2_pre)
@@ -240,8 +265,12 @@ def dr_traditional_rc_att_if(endog: np.ndarray,  # [:, None]
 
     # derivative matrix (k x 1 vector)
 
-    M3_post = - np.mean(w_cont_post * post * exog, axis=0)[:, None] / np.mean(w_cont_post)
-    M3_pre = - np.mean(w_cont_pre * (1 - post) * exog, axis=0)[:, None] / np.mean(w_cont_pre)
+    M3_post = -np.mean(w_cont_post * post * exog, axis=0)[:, None] / np.mean(
+        w_cont_post
+    )
+    M3_pre = -np.mean(w_cont_pre * (1 - post) * exog, axis=0)[:, None] / np.mean(
+        w_cont_pre
+    )
 
     # now get the influence function related to the estimation effect related to beta's
     inf_cont_or_post = asy_lin_rep_ols_post @ M3_post
@@ -267,8 +296,12 @@ def dr_traditional_rc_att_if(endog: np.ndarray,  # [:, None]
     inf_eff = (inf_eff1 - inf_eff2) - (inf_eff3 - inf_eff4)
 
     # now the estimation effect of the OR coefficients
-    mom_post = np.mean((w_d / np.mean(w_d) - w_dt1 / np.mean(w_dt1)) * exog, axis=0)[:, None]
-    mom_pre = np.mean((w_d / np.mean(w_d) - w_dt0 / np.mean(w_dt0)) * exog, axis=0)[:, None]
+    mom_post = np.mean((w_d / np.mean(w_d) - w_dt1 / np.mean(w_dt1)) * exog, axis=0)[
+        :, None
+    ]
+    mom_pre = np.mean((w_d / np.mean(w_d) - w_dt0 / np.mean(w_dt0)) * exog, axis=0)[
+        :, None
+    ]
 
     inf_or_post = (asy_lin_rep_ols_post_treat - asy_lin_rep_ols_post) @ mom_post
     inf_or_pre = (asy_lin_rep_ols_pre_treat - asy_lin_rep_ols_pre) @ mom_pre
@@ -288,31 +321,38 @@ def dr_traditional_rc_att_if(endog: np.ndarray,  # [:, None]
 
 # ------------------------- drdid improved -----------------------------
 
-def dr_improved_panel_att_if(endog: np.ndarray,  # [:, None]
-                             treated: np.ndarray,  # [:, None]  D
-                             weights: np.ndarray,  # [:, None]
-                             out_delta: np.ndarray,  # [:, None]
-                             ps_fit: np.ndarray,  # [:, None]
-                             **kwargs):
+
+def dr_improved_panel_att_if(
+    endog: ndarray,  # [:, None]
+    treated: ndarray,  # [:, None]  D
+    weights: ndarray,  # [:, None]
+    out_delta: ndarray,  # [:, None]
+    ps_fit: ndarray,  # [:, None]
+    **kwargs,
+):
     dr_att_summand_num = (1 - (1 - treated) / (1 - ps_fit)) * (endog - out_delta)
     dr_att = np.mean(weights * dr_att_summand_num) / np.mean(treated * weights)
 
     # get the influence function to compute standard error
-    dr_att_inf_func = ((weights * (dr_att_summand_num - treated * dr_att)) /
-                       np.mean(treated * weights))
+    dr_att_inf_func = (weights * (dr_att_summand_num - treated * dr_att)) / np.mean(
+        treated * weights
+    )
 
     return dr_att, dr_att_inf_func
 
 
-def dr_improved_rc_att_if(endog: np.ndarray,  # [:, None]
-                          treated: np.ndarray,  # [:, None]
-                          weights: np.ndarray,  # [:, None]
-                          out_delta: np.ndarray,  # n x 4
-                          ps_fit: np.ndarray,  # [:, None]
-                          post: np.ndarray,  # [:, None]
-                          **kwargs):
-    out_y_cont_pre, out_y_cont_post, \
-    out_y_treat_pre, out_y_treat_post = np.split(out_delta, 4, axis=1)
+def dr_improved_rc_att_if(
+    endog: ndarray,  # [:, None]
+    treated: ndarray,  # [:, None]
+    weights: ndarray,  # [:, None]
+    out_delta: ndarray,  # n x 4
+    ps_fit: ndarray,  # [:, None]
+    post: ndarray,  # [:, None]
+    **kwargs,
+):
+    out_y_cont_pre, out_y_cont_post, out_y_treat_pre, out_y_treat_post = np.split(
+        out_delta, 4, axis=1
+    )
 
     # ------------------------------------------------------------------
 
@@ -358,8 +398,12 @@ def dr_improved_rc_att_if(endog: np.ndarray,  # [:, None]
     att_dt0_pre = np.mean(eta_dt0_pre)
 
     # ATT estimator
-    dr_att = (att_treat_post - att_treat_pre) - (att_cont_post - att_cont_pre) + \
-             (att_d_post - att_dt1_post) - (att_d_pre - att_dt0_pre)
+    dr_att = (
+        (att_treat_post - att_treat_pre)
+        - (att_cont_post - att_cont_pre)
+        + (att_d_post - att_dt1_post)
+        - (att_d_pre - att_dt0_pre)
+    )
 
     # ------------------------------------------------------------------
     # influence function
@@ -368,7 +412,9 @@ def dr_improved_rc_att_if(endog: np.ndarray,  # [:, None]
 
     # leading term of the influence function: no estimation effect
     inf_treat_pre = eta_treat_pre - w_treat_pre * att_treat_pre / np.mean(w_treat_pre)
-    inf_treat_post = eta_treat_post - w_treat_post * att_treat_post / np.mean(w_treat_post)
+    inf_treat_post = eta_treat_post - w_treat_post * att_treat_post / np.mean(
+        w_treat_post
+    )
 
     # influence function for the treated component
     inf_treat = inf_treat_post - inf_treat_pre
@@ -405,12 +451,15 @@ def dr_improved_rc_att_if(endog: np.ndarray,  # [:, None]
 
 # ---------------------- did outcome regression ------------------------
 
-def reg_panel_att_if(endog: np.ndarray,
-                     exog: np.ndarray,
-                     weights: np.ndarray,
-                     treated: np.ndarray,
-                     out_delta: np.ndarray,
-                     **kwargs):
+
+def reg_panel_att_if(
+    endog: ndarray,
+    exog: ndarray,
+    weights: ndarray,
+    treated: ndarray,
+    out_delta: ndarray,
+    **kwargs,
+):
     n_obs = len(exog)
 
     # ------------------------------------------------------------------
@@ -438,11 +487,13 @@ def reg_panel_att_if(endog: np.ndarray,
 
     # asymptotic linear representation of OLS parameters
 
-    asy_lin_rep_ols = asymptotic_lin_repr(endog=endog,
-                                          exog=exog,
-                                          n_obs=n_obs,
-                                          weights=weights * (1 - treated),
-                                          out_y=out_delta)
+    asy_lin_rep_ols = asymptotic_lin_repr(
+        endog=endog,
+        exog=exog,
+        n_obs=n_obs,
+        weights=weights * (1 - treated),
+        out_y=out_delta,
+    )
 
     # ------------------------------------------------------------------
     # Now, the influence function of the "treat" component
@@ -454,7 +505,7 @@ def reg_panel_att_if(endog: np.ndarray,
 
     # get the influence function of control component
     # leading term of the influence function: no estimation effect
-    inf_cont_1 = (reg_att_cont - w_cont * eta_cont)
+    inf_cont_1 = reg_att_cont - w_cont * eta_cont
 
     # estimation effect from beta hat (OLS using only controls)
     # derivative matrix (k x 1 vector)
@@ -472,18 +523,20 @@ def reg_panel_att_if(endog: np.ndarray,
     # ------------------------------------------------------------------
     # get the influence function of the DR estimator
     # (put all pieces together)
-    reg_att_inf_func = (inf_treat - inf_control)
+    reg_att_inf_func = inf_treat - inf_control
 
     return reg_att, reg_att_inf_func
 
 
-def reg_rc_att_if(endog: np.ndarray,
-                  exog: np.ndarray,
-                  weights: np.ndarray,
-                  treated: np.ndarray,
-                  out_delta: np.ndarray,
-                  post: np.ndarray,
-                  **kwargs):
+def reg_rc_att_if(
+    endog: ndarray,
+    exog: ndarray,
+    weights: ndarray,
+    treated: ndarray,
+    out_delta: ndarray,
+    post: ndarray,
+    **kwargs,
+):
     n_obs = exog.shape[0]
     out_y_pre, out_y_post = np.split(out_delta, 2, axis=1)
 
@@ -514,31 +567,39 @@ def reg_rc_att_if(endog: np.ndarray,
     # First, the influence function of the nuisance functions
     # Asymptotic linear representation of OLS parameters in pre-period
 
-    asy_lin_rep_ols_pre = asymptotic_lin_repr(endog=endog,
-                                              exog=exog,
-                                              n_obs=n_obs,
-                                              weights=weights * (1 - treated) * (1 - post),
-                                              out_y=out_y_pre)
+    asy_lin_rep_ols_pre = asymptotic_lin_repr(
+        endog=endog,
+        exog=exog,
+        n_obs=n_obs,
+        weights=weights * (1 - treated) * (1 - post),
+        out_y=out_y_pre,
+    )
 
     # Asymptotic linear representation of OLS parameters in post-period
 
-    asy_lin_rep_ols_post = asymptotic_lin_repr(endog=endog,
-                                               exog=exog,
-                                               n_obs=n_obs,
-                                               weights=weights * (1 - treated) * post,
-                                               out_y=out_y_post)
+    asy_lin_rep_ols_post = asymptotic_lin_repr(
+        endog=endog,
+        exog=exog,
+        n_obs=n_obs,
+        weights=weights * (1 - treated) * post,
+        out_y=out_y_post,
+    )
 
     # ------------------------------------------------------------------
     # Now, the influence function of the "treat" component
     # Leading term of the influence function
-    inf_treat_pre = (reg_att_treat_pre - w_treat_pre * eta_treat_pre) / np.mean(w_treat_pre)
-    inf_treat_post = (reg_att_treat_post - w_treat_post * eta_treat_post) / np.mean(w_treat_post)
+    inf_treat_pre = (reg_att_treat_pre - w_treat_pre * eta_treat_pre) / np.mean(
+        w_treat_pre
+    )
+    inf_treat_post = (reg_att_treat_post - w_treat_post * eta_treat_post) / np.mean(
+        w_treat_post
+    )
     inf_treat = inf_treat_post - inf_treat_pre
     # ------------------------------------------------------------------
 
     # Now, get the influence function of control component
     # Leading term of the influence function: no estimation effect
-    inf_cont_1 = (reg_att_cont - w_cont * eta_cont)
+    inf_cont_1 = reg_att_cont - w_cont * eta_cont
     # Estimation effect from beta hat (OLS using only controls)
     # Derivative matrix (k x 1 vector)
 
@@ -558,7 +619,7 @@ def reg_rc_att_if(endog: np.ndarray,
     # ------------------------------------------------------------------
 
     # get the influence function of the DR estimator (put all pieces together)
-    reg_att_inf_func = (inf_treat - inf_control)
+    reg_att_inf_func = inf_treat - inf_control
 
     return reg_att, reg_att_inf_func
 
@@ -566,13 +627,15 @@ def reg_rc_att_if(endog: np.ndarray,
 # ---------------------------- ipw did ---------------------------------
 
 
-def ipw_panel_att_if(endog: np.ndarray,  # [:, None]
-                     exog: np.ndarray,
-                     treated: np.ndarray,  # [:, None]  D
-                     weights: np.ndarray,  # [:, None]
-                     ps_fit: np.ndarray,  # [:, None]
-                     pscore_cov_params: np.ndarray,
-                     **kwargs):
+def ipw_panel_att_if(
+    endog: ndarray,  # [:, None]
+    exog: ndarray,
+    treated: ndarray,  # [:, None]  D
+    weights: ndarray,  # [:, None]
+    ps_fit: ndarray,  # [:, None]
+    pscore_cov_params: ndarray,
+    **kwargs,
+):
     n_obs = exog.shape[0]
 
     # ------------------------------------------------------------------
@@ -616,19 +679,22 @@ def ipw_panel_att_if(endog: np.ndarray,  # [:, None]
 
     # get the influence function of the DR estimator (put all pieces together)
 
-    att_inf_func = ((att_lin1 - att_lin2 - weights * treated * ipw_att) /
-                    np.mean(weights * treated))
+    att_inf_func = (att_lin1 - att_lin2 - weights * treated * ipw_att) / np.mean(
+        weights * treated
+    )
 
     return ipw_att, att_inf_func
 
 
-def std_ipw_panel_att_if(endog: np.ndarray,  # [:, None]
-                         exog: np.ndarray,
-                         treated: np.ndarray,  # [:, None]
-                         weights: np.ndarray,  # [:, None]
-                         ps_fit: np.ndarray,  # [:, None]
-                         pscore_cov_params: np.ndarray,
-                         **kwargs):
+def std_ipw_panel_att_if(
+    endog: ndarray,  # [:, None]
+    exog: ndarray,
+    treated: ndarray,  # [:, None]
+    weights: ndarray,  # [:, None]
+    ps_fit: ndarray,  # [:, None]
+    pscore_cov_params: ndarray,
+    **kwargs,
+):
     n_obs = exog.shape[0]
 
     # ------------------------------------------------------------------
@@ -668,7 +734,7 @@ def std_ipw_panel_att_if(endog: np.ndarray,  # [:, None]
     # now, get the influence function of control component
     # leading term of the influence function: no estimation effect
 
-    inf_cont_1 = (att_cont - w_cont * eta_cont)
+    inf_cont_1 = att_cont - w_cont * eta_cont
     # estimation effect from gamma hat (pscore)
 
     # derivative matrix (k x 1 vector)
@@ -686,14 +752,16 @@ def std_ipw_panel_att_if(endog: np.ndarray,  # [:, None]
     return ipw_att, att_inf_func
 
 
-def ipw_rc_att_if(endog: np.ndarray,  # [:, None]
-                  exog: np.ndarray,
-                  treated: np.ndarray,  # [:, None]
-                  weights: np.ndarray,  # [:, None]
-                  ps_fit: np.ndarray,  # [:, None]
-                  pscore_cov_params: np.ndarray,
-                  post: np.ndarray,
-                  **kwargs):
+def ipw_rc_att_if(
+    endog: ndarray,  # [:, None]
+    exog: ndarray,
+    treated: ndarray,  # [:, None]
+    weights: ndarray,  # [:, None]
+    ps_fit: ndarray,  # [:, None]
+    pscore_cov_params: ndarray,
+    post: ndarray,
+    **kwargs,
+):
     n_obs = exog.shape[0]
 
     # ------------------------------------------------------------------
@@ -739,56 +807,66 @@ def ipw_rc_att_if(endog: np.ndarray,  # [:, None]
     # influence function of the treated components
 
     inf_treat_post1 = eta_treat_post - att_treat_post
-    inf_treat_post2 = - (weights * treated - Pi_hat) * att_treat_post / Pi_hat
-    inf_treat_post3 = - (weights * post - lambda_hat) * att_treat_post / lambda_hat
+    inf_treat_post2 = -(weights * treated - Pi_hat) * att_treat_post / Pi_hat
+    inf_treat_post3 = -(weights * post - lambda_hat) * att_treat_post / lambda_hat
     inf_treat_post = inf_treat_post1 + inf_treat_post2 + inf_treat_post3
 
     inf_treat_pre1 = eta_treat_pre - att_treat_pre
-    inf_treat_pre2 = - (weights * treated - Pi_hat) * att_treat_pre / Pi_hat
-    inf_treat_pre3 = - ((weights * (1 - post) - one_minus_lambda_hat) * att_treat_pre
-                        / one_minus_lambda_hat)
+    inf_treat_pre2 = -(weights * treated - Pi_hat) * att_treat_pre / Pi_hat
+    inf_treat_pre3 = -(
+        (weights * (1 - post) - one_minus_lambda_hat)
+        * att_treat_pre
+        / one_minus_lambda_hat
+    )
     inf_treat_pret = inf_treat_pre1 + inf_treat_pre2 + inf_treat_pre3
 
     # Now, get the influence function of control component
     # First, terms of the inf_ funct as if pscore was known
     inf_cont_post1 = eta_cont_post - att_cont_post
-    inf_cont_post2 = - (weights * treated - Pi_hat) * att_cont_post / Pi_hat
-    inf_cont_post3 = - (weights * post - lambda_hat) * att_cont_post / lambda_hat
+    inf_cont_post2 = -(weights * treated - Pi_hat) * att_cont_post / Pi_hat
+    inf_cont_post3 = -(weights * post - lambda_hat) * att_cont_post / lambda_hat
     inf_cont_post = inf_cont_post1 + inf_cont_post2 + inf_cont_post3
 
     inf_cont_pre1 = eta_cont_pre - att_cont_pre
 
-    inf_cont_pre2 = - (weights * treated - Pi_hat) * att_cont_pre / Pi_hat
+    inf_cont_pre2 = -(weights * treated - Pi_hat) * att_cont_pre / Pi_hat
 
-    inf_cont_pre3 = - ((weights * (1 - post) - one_minus_lambda_hat) * att_cont_pre
-                       / one_minus_lambda_hat)
+    inf_cont_pre3 = -(
+        (weights * (1 - post) - one_minus_lambda_hat)
+        * att_cont_pre
+        / one_minus_lambda_hat
+    )
     inf_cont_pret = inf_cont_pre1 + inf_cont_pre2 + inf_cont_pre3
 
     # estimation effect from the propensity score parametes
 
     # derivative matrix (k x 1 vector)
 
-    mom_logit_pre = np.mean(- eta_cont_pre * exog, axis=0)[:, None]
-    mom_logit_post = np.mean(- eta_cont_post * exog, axis=0)[:, None]
+    mom_logit_pre = np.mean(-eta_cont_pre * exog, axis=0)[:, None]
+    mom_logit_post = np.mean(-eta_cont_post * exog, axis=0)[:, None]
 
     # now the influence function related to estimation effect of pscores
 
     inf_logit = asy_lin_rep_ps @ (mom_logit_post - mom_logit_pre)
 
     # get the influence function of the DR estimator (put all pieces together)
-    att_inf_func = (inf_treat_post - inf_treat_pret) - (inf_cont_post - inf_cont_pret) + inf_logit
+    att_inf_func = (
+        (inf_treat_post - inf_treat_pret) - (inf_cont_post - inf_cont_pret) + inf_logit
+    )
 
     return ipw_att, att_inf_func
 
 
-def std_ipw_rc_att_if(endog: np.ndarray,  # [:, None]
-                      exog: np.ndarray,
-                      treated: np.ndarray,  # [:, None]
-                      weights: np.ndarray,  # [:, None]
-                      ps_fit: np.ndarray,  # [:, None]
-                      pscore_cov_params: np.ndarray,
-                      post: np.ndarray,
-                      **kwargs):
+def std_ipw_rc_att_if(
+    endog: ndarray,  # [:, None]
+    exog: ndarray,
+    treated: ndarray,  # [:, None]
+    weights: ndarray,  # [:, None]
+    ps_fit: ndarray,  # [:, None]
+    pscore_cov_params: ndarray,
+    post: ndarray,
+    **kwargs,
+):
     n_obs = exog.shape[0]
 
     # ------------------------------------------------------------------
@@ -833,7 +911,9 @@ def std_ipw_rc_att_if(endog: np.ndarray,  # [:, None]
     # leading term of the influence function: no estimation effect
 
     inf_treat_pre = eta_treat_pre - w_treat_pre * att_treat_pre / np.mean(w_treat_pre)
-    inf_treat_post = eta_treat_post - w_treat_post * att_treat_post / np.mean(w_treat_post)
+    inf_treat_post = eta_treat_post - w_treat_post * att_treat_post / np.mean(
+        w_treat_post
+    )
     inf_treat = inf_treat_post - inf_treat_pre
 
     # now, get the influence function of control component
@@ -848,12 +928,13 @@ def std_ipw_rc_att_if(endog: np.ndarray,  # [:, None]
 
     # derivative matrix (k x 1 vector)
 
-    M2_pre = (np.mean(w_cont_pre * (endog - att_cont_pre) * exog, axis=0)[:, None] /
-              np.mean(w_cont_pre)
-              )
+    M2_pre = np.mean(w_cont_pre * (endog - att_cont_pre) * exog, axis=0)[
+        :, None
+    ] / np.mean(w_cont_pre)
 
-    M2_post = (np.mean(w_cont_post * (endog - att_cont_post) * exog, axis=0)[:, None] /
-               np.mean(w_cont_post))
+    M2_post = np.mean(w_cont_post * (endog - att_cont_post) * exog, axis=0)[
+        :, None
+    ] / np.mean(w_cont_post)
 
     # now the influence function related to estimation effect of pscores
     inf_cont_ps = asy_lin_rep_ps @ (M2_post - M2_pre)
@@ -869,11 +950,8 @@ def std_ipw_rc_att_if(endog: np.ndarray,  # [:, None]
 
 # --------------------------- helpers ----------------------------------
 
-def asymptotic_lin_repr(endog,
-                        exog,
-                        n_obs,
-                        weights,
-                        out_y):
+
+def asymptotic_lin_repr(endog, exog, n_obs, weights, out_y):
     wols_x = weights * exog
     wols_eX = weights * (endog - out_y) * exog
 

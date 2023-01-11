@@ -10,41 +10,42 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
+from __future__ import annotations
+
 import glob
 import hashlib
+import os
+import sys
 
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------
 
-project = 'differences'
-copyright = '2022, Bernardo Dionsi'
-author = 'Bernardo Dionsi'
+project = "differences"
+copyright = "2022, Bernardo Dionsi"
+author = "Bernardo Dionsi"
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = "0.1.0"
 
 # -- General configuration ---------------------------------------------
 
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     # 'sphinx.ext.viewcode',
-
-    'sphinx_copybutton',
-    'sphinx.ext.doctest',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx',  # provides links for classes in type annotations
-    'nbsphinx',
-    'altair.sphinxext.altairplot',
+    "sphinx_copybutton",
+    "sphinx.ext.doctest",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.intersphinx",  # provides links for classes in type annotations
+    "nbsphinx",
+    "altair.sphinxext.altairplot",
 ]
 
 autosummary_generate = True
@@ -62,17 +63,17 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'furo'
+html_theme = "furo"
 
 html_theme_options = {
     "sidebar_hide_name": True,
 }
-html_title = 'differences'
+html_title = "differences"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 html_logo = "images/logo/bw/logo_name_bw.png"
 # html_logo = "images/logo/bw/logo_bw.png"
@@ -80,7 +81,7 @@ html_logo = "images/logo/bw/logo_name_bw.png"
 # These paths are either relative to html_static_path
 # or fully qualified paths (eg. https://...)
 html_css_files = [
-    'css/custom.css',
+    "css/custom.css",
 ]
 
 # todo: ADD rst_prolog to global
@@ -102,7 +103,7 @@ print(files)
 for file_to_copy in files:
     file_name = os.path.split(file_to_copy)[-1]
 
-    out_dir = 'notebooks'
+    out_dir = "notebooks"
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir, exist_ok=True)

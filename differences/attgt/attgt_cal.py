@@ -1,64 +1,50 @@
 from __future__ import annotations
 
-import numpy as np
-from pandas import DataFrame, Index
-
-from scipy.stats import norm
-from scipy.sparse import csr_array, lil_array
-
 from collections import namedtuple
 from typing import Callable
 
+import numpy as np
+from joblib import Parallel, cpu_count, delayed
+from joblib.externals.loky import get_reusable_executor
+from pandas import DataFrame, Index
+from scipy.sparse import csr_array, lil_array
+from scipy.stats import norm
 from tqdm import tqdm
 
-from joblib import Parallel, delayed, cpu_count
-from joblib.externals.loky import get_reusable_executor
-
-from ..tools.utility import tqdm_joblib
-from ..tools.panel_utility import panel_2_cross_section_diff
-
 from ..attgt.mboot import mboot
-from ..attgt.utility import (get_std_errors_from_if,
-                             get_sparse_array,
-                             stack_influence_funcs,
-                             ATTgtResult)
-
+from ..attgt.utility import (ATTgtResult, get_sparse_array,
+                             get_std_errors_from_if, stack_influence_funcs)
+from ..tools.panel_utility import panel_2_cross_section_diff
+from ..tools.utility import tqdm_joblib
 
 # todo: FIX important, for unbalanced panels the cohort dummy and the rest has, when cluster var
 # ------------ att and influence function for a single ct --------------
 
-def did_single_gt(data: DataFrame,
-                  entities: Index,
-                  entity_name: str,
-                  n_total: int,
 
-                  y_name: str,
-
-                  cohort_name: str,
-                  strata_name: str,
-
-                  weights_name: str,
-
-                  x_covariates: list,
-                  x_base: list,
-                  x_delta: list,
-
-                  anticipation: int,
-                  control_group: str,
-
-                  is_panel: bool,
-                  is_balanced_panel: bool,
-                  cluster_by_entity: bool,
-
-                  att_ct_func: Callable,
-
-                  # will be the iterable to iterate over
-                  cohort: int,
-                  base_period: int,
-                  time: int,
-                  stratum: str | float | int = None
-
-                  ) -> namedtuple:
+def did_single_gt(
+    data: DataFrame,
+    entities: Index,
+    entity_name: str,
+    n_total: int,
+    y_name: str,
+    cohort_name: str,
+    strata_name: str,
+    weights_name: str,
+    x_covariates: list,
+    x_base: list,
+    x_delta: list,
+    anticipation: int,
+    control_group: str,
+    is_panel: bool,
+    is_balanced_panel: bool,
+    cluster_by_entity: bool,
+    att_ct_func: Callable,
+    # will be the iterable to iterate over
+    cohort: int,
+    base_period: int,
+    time: int,
+    stratum: str | float | int = None,
+) -> namedtuple:
     """
     computes the ATT for a single cohort-time
 
@@ -84,43 +70,45 @@ def did_single_gt(data: DataFrame,
 
         # if a stratum (for example intensity of treat) then treated are subset of cohort
         # stratum name should not vary within entity
-        treat_info_list = [cohort_name,
-                           strata_name] if strata_name is not None else cohort_name
+        treat_info_list = (
+            [cohort_name, strata_name] if strata_name is not None else cohort_name
+        )
 
         # cluster_by_entity should be False for true rc (would be redundant)
         if is_panel or cluster_by_entity:
             data = data.groupby(entity_name)[treat_info_list].first().reset_index()
 
-        cohort_dummy = csr_array((data[cohort_name] == cohort).astype(int).to_numpy()[:, None])
+        cohort_dummy = csr_array(
+            (data[cohort_name] == cohort).astype(int).to_numpy()[:, None]
+        )
 
         if strata_name is not None:
             cohort_stratum_mask = (data[cohort_name] == cohort) & (
-                    data[strata_name] == stratum)
+                data[strata_name] == stratum
+            )
 
-            cohort_stratum_dummy = csr_array(cohort_stratum_mask.astype(int).to_numpy()[:, None])
+            cohort_stratum_dummy = csr_array(
+                cohort_stratum_mask.astype(int).to_numpy()[:, None]
+            )
             stratum_dummy = csr_array(
-                (data[strata_name] == stratum).astype(int).to_numpy()[:, None])
+                (data[strata_name] == stratum).astype(int).to_numpy()[:, None]
+            )
 
         return ATTgtResult(
             cohort=cohort,
             base_period=base_period,
             time=time,
             stratum=stratum,
-
             anticipation=anticipation,
             control_group=control_group,
-
             n_sample=np.nan,
             n_total=n_total,
-
             cohort_dummy=cohort_dummy,
             cohort_stratum_dummy=cohort_stratum_dummy,
             stratum_dummy=stratum_dummy,
-
             exception=None,
-
             ATT=0,
-            influence_func=csr_array((n_total, 1))
+            influence_func=csr_array((n_total, 1)),
         )
 
     # --------------------- treated / control --------------------------
@@ -128,22 +116,26 @@ def did_single_gt(data: DataFrame,
     if strata_name is None:  # classic ct
         mask_treated = (data[cohort_name] == cohort).values
     else:
-        mask_treated = ((data[cohort_name] == cohort) & (data[strata_name] == stratum)).values
+        mask_treated = (
+            (data[cohort_name] == cohort) & (data[strata_name] == stratum)
+        ).values
 
     mask_control = (data[cohort_name].isnull()).values  # never treated
 
     # not yet treated
-    if control_group == 'not_yet_treated':
+    if control_group == "not_yet_treated":
         maxt_ = max(time, base_period)
 
-        mask_control = mask_control | ((~mask_treated)
-                                       & (data[cohort_name] > maxt_ + anticipation).values
-                                       )
+        mask_control = mask_control | (
+            (~mask_treated) & (data[cohort_name] > maxt_ + anticipation).values
+        )
 
     # ---------------- pre / post (base period / time) -----------------
 
     times_values = data.index.get_level_values(1)
-    mask_pre_post = (times_values == base_period) | (times_values == time)  # pre or post
+    mask_pre_post = (times_values == base_period) | (
+        times_values == time
+    )  # pre or post
 
     # must be treated or control & must be observed pre or post
     mask_pre_post = (mask_treated | mask_control) & mask_pre_post
@@ -151,7 +143,9 @@ def did_single_gt(data: DataFrame,
     # ------------------------------------------------------------------
 
     # cluster_by_entity should be False for true rc (would be redundant)
-    if not is_balanced_panel and cluster_by_entity:  # panels (as rc) but entity level if
+    if (
+        not is_balanced_panel and cluster_by_entity
+    ):  # panels (as rc) but entity level if
 
         # cohort_dummy needs to be defined before masking for unbalanced panels,
         # some treated may be dropped when masked because they may not have pre or post,
@@ -170,21 +164,21 @@ def did_single_gt(data: DataFrame,
                 cohort_name=cohort_name,
                 cohort=cohort,
                 strata_name=strata_name,
-                stratum=stratum)
+                stratum=stratum,
+            )
 
             cohort_stratum_dummy = csr_array(mask_treated_entities.astype(int)[:, None])
 
     # ------------------------------------------------------------------
 
-    data = (data
-            [mask_pre_post]
-            .assign(_treated=lambda x: mask_treated[mask_pre_post].astype(int),
-                    _control=lambda x: mask_control[mask_pre_post].astype(int))
-            )
+    data = data[mask_pre_post].assign(
+        _treated=lambda x: mask_treated[mask_pre_post].astype(int),
+        _control=lambda x: mask_control[mask_pre_post].astype(int),
+    )
 
     if is_panel and not is_balanced_panel:  # unbalanced panel: balance it 2x2
         mask_balance_2x2 = data.index.get_level_values(0).duplicated(keep=False)
-        n_dropped_entities = np.sum(~mask_balance_2x2)
+        np.sum(~mask_balance_2x2)
         data = data[mask_balance_2x2].copy()
 
     # ------------------------------------------------------------------
@@ -198,7 +192,9 @@ def did_single_gt(data: DataFrame,
     if is_panel:  # originally balanced panel + unbalanced-balance_2x2
 
         # automatically clustered by entity
-        treated_entities = data[lambda x: x['_treated'] == 1].index.get_level_values(0).unique()
+        treated_entities = (
+            data[lambda x: x["_treated"] == 1].index.get_level_values(0).unique()
+        )
         mask_treated_entities = np.isin(entities, treated_entities)
 
         if is_balanced_panel:
@@ -212,11 +208,16 @@ def did_single_gt(data: DataFrame,
                     cohort_name=cohort_name,
                     cohort=cohort,
                     strata_name=strata_name,
-                    stratum=stratum)
+                    stratum=stratum,
+                )
 
-                cohort_stratum_dummy = csr_array(mask_treated_entities.astype(int)[:, None])
+                cohort_stratum_dummy = csr_array(
+                    mask_treated_entities.astype(int)[:, None]
+                )
 
-        control_entities = data[lambda x: x['_control'] == 1].index.get_level_values(0).unique()
+        control_entities = (
+            data[lambda x: x["_control"] == 1].index.get_level_values(0).unique()
+        )
         mask_control_entities = np.isin(entities, control_entities)
 
         tc_bool = np.array(mask_treated_entities | mask_control_entities)
@@ -234,7 +235,9 @@ def did_single_gt(data: DataFrame,
         )
 
     else:
-        data['post'] = (data.index.get_level_values(1) == time).astype(int)  # post dummy
+        data["post"] = (data.index.get_level_values(1) == time).astype(
+            int
+        )  # post dummy
 
         if cluster_by_entity:  # panel (as rc) but entity level if
 
@@ -249,10 +252,14 @@ def did_single_gt(data: DataFrame,
         else:  # repeated cross-section (could be panel as rc)
             # -- all at obs level --
 
-            sample_idx = np.argwhere(mask_pre_post).flatten()  # to populate influence_func
+            sample_idx = np.argwhere(
+                mask_pre_post
+            ).flatten()  # to populate influence_func
 
             if strata_name is None:
-                cohort_dummy = csr_array(mask_treated.astype(int)[:, None])  # obs level (rc/as rc)
+                cohort_dummy = csr_array(
+                    mask_treated.astype(int)[:, None]
+                )  # obs level (rc/as rc)
             else:
                 # obs level (rc/as rc)
 
@@ -263,7 +270,7 @@ def did_single_gt(data: DataFrame,
                     cohort=cohort,
                     strata_name=strata_name,
                     stratum=stratum,
-                    repeated_cross_section=True
+                    repeated_cross_section=True,
                 )
 
                 # cohort_stratum_dummy as cohort_dummy when strata_name is not None
@@ -276,9 +283,9 @@ def did_single_gt(data: DataFrame,
         drdid_res = att_ct_func(
             endog=data[y_name].to_numpy(),
             exog=data[x_covariates].to_numpy(),
-            treated=data['_treated'].to_numpy(),
+            treated=data["_treated"].to_numpy(),
             weights=data[weights_name].to_numpy(),
-            post=data['post'].to_numpy() if not is_panel else None
+            post=data["post"].to_numpy() if not is_panel else None,
         )
 
     except Exception as ex:
@@ -287,150 +294,122 @@ def did_single_gt(data: DataFrame,
             base_period=base_period,
             time=time,
             stratum=stratum,
-
             anticipation=anticipation,
             control_group=control_group,
-
             n_sample=n_sample,
             n_total=n_total,
-
             cohort_dummy=None,
             cohort_stratum_dummy=None,
             stratum_dummy=None,
-
             exception=ex,
-
             ATT=np.NaN,  # att, need nan to do some operations
-            influence_func=None
+            influence_func=None,
         )
 
     # ----------------------- influence function -----------------------
 
-    influence_func = drdid_res['influence_func'].flatten()
+    influence_func = drdid_res["influence_func"].flatten()
 
-    influence_func *= (n_total / n_sample)
+    influence_func *= n_total / n_sample
 
     if not is_panel and cluster_by_entity:
         influence_func = np.bincount(entity_strata, weights=influence_func)
 
     influence_func = get_sparse_array(
-        nrows=n_total,
-        ary=influence_func,
-        fill_idx=sample_idx,
-        sparse_func=lil_array)
+        nrows=n_total, ary=influence_func, fill_idx=sample_idx, sparse_func=lil_array
+    )
 
     return ATTgtResult(
         cohort=cohort,
         base_period=base_period,
         time=time,
         stratum=stratum,
-
         anticipation=anticipation,
         control_group=control_group,
-
         n_sample=n_sample,
         n_total=n_total,
-
         cohort_dummy=cohort_dummy,
         cohort_stratum_dummy=cohort_stratum_dummy,
         stratum_dummy=stratum_dummy,
-
         exception=None,
-
-        ATT=drdid_res['att'],
-        influence_func=influence_func
+        ATT=drdid_res["att"],
+        influence_func=influence_func,
     )
 
 
 # --------------------- ATT & standard errors --------------------------
 
 
-def get_att_gt(group_time: list[dict],
-
-               data: DataFrame,
-
-               y_name: str,
-
-               cohort_name: str,
-
-               is_panel: bool,
-               is_balanced_panel: bool,
-               cluster_by_entity: bool,
-
-               x_covariates: list,
-               x_base: list,
-               x_delta: list,
-
-               strata_name: str = None,
-               weights_name: str = None,
-
-               control_group: str = 'never_treated',
-               anticipation: int = 0,
-
-               att_function_ct: Callable = None,
-
-               n_jobs_ct: int = 1,
-               backend_ct: str = 'loky',
-
-               progress_bar: bool = True,
-               sample_name: str = None,
-               release_workers: bool = True,
-
-               ) -> list[namedtuple]:
-    if control_group not in ['never_treated', 'not_yet_treated']:
-        raise ValueError("'control_group' must be either set to either"
-                         "'never_treated' or 'not_yet_treated'")
+def get_att_gt(
+    group_time: list[dict],
+    data: DataFrame,
+    y_name: str,
+    cohort_name: str,
+    is_panel: bool,
+    is_balanced_panel: bool,
+    cluster_by_entity: bool,
+    x_covariates: list,
+    x_base: list,
+    x_delta: list,
+    strata_name: str = None,
+    weights_name: str = None,
+    control_group: str = "never_treated",
+    anticipation: int = 0,
+    att_function_ct: Callable = None,
+    n_jobs_ct: int = 1,
+    backend_ct: str = "loky",
+    progress_bar: bool = True,
+    sample_name: str = None,
+    release_workers: bool = True,
+) -> list[namedtuple]:
+    if control_group not in ["never_treated", "not_yet_treated"]:
+        raise ValueError(
+            "'control_group' must be either set to either"
+            "'never_treated' or 'not_yet_treated'"
+        )
 
     entities = data.index.get_level_values(0).unique()
     entity_name = data.index.names[0]
 
     # is_panel is False if the user requested as_repeated_cross_section
-    n_total = entities.nunique() if is_panel or cluster_by_entity else len(data)  # total n obs
+    n_total = (
+        entities.nunique() if is_panel or cluster_by_entity else len(data)
+    )  # total n obs
 
     # needed for the progress bar
     jobs = cpu_count() + 1 - n_jobs_ct if n_jobs_ct < 0 else n_jobs_ct
-    sample_name = f'for {sample_name} ' if sample_name else ''
+    sample_name = f"for {sample_name} " if sample_name else ""
 
     with tqdm_joblib(
-            tqdm(disable=not progress_bar,
-                 desc=f'Computing ATTgt {sample_name}[workers={jobs}]',
-                 total=len(group_time),
-                 bar_format='{desc:<30}{percentage:3.0f}%|{bar:20}{r_bar}'
-                 )
+        tqdm(
+            disable=not progress_bar,
+            desc=f"Computing ATTgt {sample_name}[workers={jobs}]",
+            total=len(group_time),
+            bar_format="{desc:<30}{percentage:3.0f}%|{bar:20}{r_bar}",
+        )
     ):
 
         # compute the ct att. order of parameters must conform to did_single_gt()
-        res_ntl = Parallel(n_jobs=n_jobs_ct,
-                           backend=backend_ct,
-                           )(
-            delayed(
-                did_single_gt)(
-
+        res_ntl = Parallel(n_jobs=n_jobs_ct, backend=backend_ct,)(
+            delayed(did_single_gt)(
                 data,
                 entities,
                 entity_name,
                 n_total,
-
                 y_name,
                 cohort_name,
                 strata_name,
-
                 weights_name,
-
                 x_covariates,
                 x_base,
                 x_delta,
-
                 anticipation,
                 control_group,
-
                 is_panel,
                 is_balanced_panel,
                 cluster_by_entity,
-
                 att_function_ct,
-
-                **gt
+                **gt,
             )
             for gt in group_time
         )
@@ -441,24 +420,23 @@ def get_att_gt(group_time: list[dict],
     return res_ntl
 
 
-def get_standard_errors(ntl: list[namedtuple],
-
-                        cluster_groups: np.ndarray = None,
-
-                        alpha: float = 0.05,
-                        boot_iterations: int = 0,
-                        random_state: int = None,
-
-                        backend_boot: str = 'loky',
-                        n_jobs_boot: int = -1,
-
-                        progress_bar: bool = True,
-                        sample_name: str = None,
-                        release_workers: bool = True
-                        ) -> list[namedtuple]:
+def get_standard_errors(
+    ntl: list[namedtuple],
+    cluster_groups: np.ndarray = None,
+    alpha: float = 0.05,
+    boot_iterations: int = 0,
+    random_state: int = None,
+    backend_boot: str = "loky",
+    n_jobs_boot: int = -1,
+    progress_bar: bool = True,
+    sample_name: str = None,
+    release_workers: bool = True,
+) -> list[namedtuple]:
     if boot_iterations < 0:
-        raise ValueError("'boot_iterations' must be >= 0. "
-                         "If boot_iterations=0, analytic standard errors are computed")
+        raise ValueError(
+            "'boot_iterations' must be >= 0. "
+            "If boot_iterations=0, analytic standard errors are computed"
+        )
 
     # influence funcs + idx for not nan cols
     inf_funcs, not_nan_idx = stack_influence_funcs(ntl, return_idx=True)
@@ -476,18 +454,16 @@ def get_standard_errors(ntl: list[namedtuple],
             alpha=alpha,
             boot_iterations=boot_iterations,
             random_state=random_state,
-
             boot_backend=backend_boot,
             boot_n_jobs=n_jobs_boot,
-
             progress_bar=progress_bar,
             sample_name=sample_name,
-            release_workers=release_workers
+            release_workers=release_workers,
         )
 
         # populate empty se array
-        se_array[not_nan_idx] = mboot_res['se']
-        cval = mboot_res['crit_val']
+        se_array[not_nan_idx] = mboot_res["se"]
+        cval = mboot_res["crit_val"]
 
     else:  # analytic standard errors
 
@@ -500,26 +476,28 @@ def get_standard_errors(ntl: list[namedtuple],
         cval = norm.ppf(1 - alpha / 2)
 
     # add standard errors & cband to namedtuples
-    out = [nt._replace(
-
-        std_error=se_array[nt_idx],
-        lower=nt.ATT - se_array[nt_idx] * cval,
-        upper=nt.ATT + se_array[nt_idx] * cval,
-        boot_iterations=boot_iterations
-    )
-        for nt_idx, nt in enumerate(ntl)]
+    out = [
+        nt._replace(
+            std_error=se_array[nt_idx],
+            lower=nt.ATT - se_array[nt_idx] * cval,
+            upper=nt.ATT + se_array[nt_idx] * cval,
+            boot_iterations=boot_iterations,
+        )
+        for nt_idx, nt in enumerate(ntl)
+    ]
 
     return out
 
 
-def get_cohort_stratum_dummies(data: DataFrame,
-                               entities: Index | list,
-                               cohort_name: str,
-                               cohort: int,
-                               strata_name: str,
-                               stratum: str | int | float,
-                               repeated_cross_section: bool = False
-                               ) -> tuple:
+def get_cohort_stratum_dummies(
+    data: DataFrame,
+    entities: Index | list,
+    cohort_name: str,
+    cohort: int,
+    strata_name: str,
+    stratum: str | int | float,
+    repeated_cross_section: bool = False,
+) -> tuple:
     """helper for did_single_gt"""
     if repeated_cross_section:
 
@@ -535,8 +513,9 @@ def get_cohort_stratum_dummies(data: DataFrame,
         # ------------------- cohort dummy ------------------------------
 
         cohort_entities = (
-            data  # this is only pre/post & control/treated
-            .loc[lambda x: x[cohort_name] == cohort]
+            data.loc[  # this is only pre/post & control/treated
+                lambda x: x[cohort_name] == cohort
+            ]
             .index.get_level_values(0)
             .unique()
         )
@@ -548,8 +527,9 @@ def get_cohort_stratum_dummies(data: DataFrame,
         # ------------------- stratum dummy ------------------------------
 
         stratum_entities = (
-            data  # this is only pre/post & control/treated
-            .loc[lambda x: x[strata_name] == stratum]
+            data.loc[  # this is only pre/post & control/treated
+                lambda x: x[strata_name] == stratum
+            ]
             .index.get_level_values(0)
             .unique()
         )

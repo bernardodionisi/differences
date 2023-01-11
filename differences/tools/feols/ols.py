@@ -1,25 +1,17 @@
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
-
-from pandas import DataFrame, Series
-
 import warnings
 
-from pyhdfe import create
+import numpy as np
+import pandas as pd
 from linearmodels.iv import AbsorbingLS
+from pandas import DataFrame, Series
+from pyhdfe import create
 
-from ..feols.utility import (find_singletons,
-                             get_categories,
-                             find_nested_fe,
-                             estimate_absorbed_fixed_effects,
-                             get_t_stats,
-                             get_p_value,
-                             get_conf_int,
-                             one_way_clustered_vcv,
-                             build_model_matrix)
-
+from ..feols.utility import (build_model_matrix,
+                             estimate_absorbed_fixed_effects, find_nested_fe,
+                             find_singletons, get_categories, get_conf_int,
+                             get_p_value, get_t_stats, one_way_clustered_vcv)
 from ..utility import parse_fe_from_formula
 
 
@@ -32,17 +24,16 @@ class FEols:
     used by the TWFE class
     """
 
-    def __init__(self,
-                 data: DataFrame,
-                 formula: str,  # includes fe as: 'y ~ x1 | fe1 + fe2 + fe3'
-                 weights_name: str = None,
-                 cluster_names: str | list = None,
-
-                 drop_singletons: bool = False,
-                 absorb_only_one_fe: bool = False,
-
-                 copy_data: bool = False
-                 ):
+    def __init__(
+        self,
+        data: DataFrame,
+        formula: str,  # includes fe as: 'y ~ x1 | fe1 + fe2 + fe3'
+        weights_name: str = None,
+        cluster_names: str | list = None,
+        drop_singletons: bool = False,
+        absorb_only_one_fe: bool = False,
+        copy_data: bool = False,
+    ):
 
         if copy_data:
             self.data = data.copy()
@@ -70,12 +61,14 @@ class FEols:
         # fixed effects + cluster_names that are stored in the data multi-index
         self._categories = list(set(self.fe + self.cluster_names))
 
-        self._idx_categories = [i for i in self._categories
-                                if i in list(self.data.index.names)]
+        self._idx_categories = [
+            i for i in self._categories if i in list(self.data.index.names)
+        ]
 
         # fixed effects + cluster_names that are stored in the data columns
-        self._cols_categories = [i for i in self._categories
-                                 if i not in self._idx_categories]
+        self._cols_categories = [
+            i for i in self._categories if i not in self._idx_categories
+        ]
 
         # --------------------------------------------------------------
         # drop singletons
@@ -83,14 +76,17 @@ class FEols:
 
         if self.drop_singletons and self.fe:
             self.singletons = find_singletons(
-                categorical_data=self.categorical_dataframe[self.fe], fe=self.fe)
+                categorical_data=self.categorical_dataframe[self.fe], fe=self.fe
+            )
 
             self.n_singletons = np.sum(self.singletons)
 
             if self.n_singletons:
-                self._categorical_dataframe = None  # un-cache self._categorical_dataframe
+                self._categorical_dataframe = (
+                    None  # un-cache self._categorical_dataframe
+                )
 
-                print(f'dropping {self.n_singletons} singletons observations')
+                print(f"dropping {self.n_singletons} singletons observations")
                 self.data = self.data[~self.singletons].copy()
 
         self._nested_fe = None  # list of fe nested within cluster_names
@@ -118,7 +114,9 @@ class FEols:
         self.res = None  # result of AbsorbingLS
         self.estimated_fe = None
 
-        self.dropped_cols = None  # cols in _x_data_matrix_cols dropped because collinear
+        self.dropped_cols = (
+            None  # cols in _x_data_matrix_cols dropped because collinear
+        )
 
         self._dof_m = None  # degrees of freedom for the model
         self._dof_a = None  # absorbed degrees of freedom
@@ -133,7 +131,7 @@ class FEols:
             self._categorical_dataframe = get_categories(
                 data=self.data,
                 cols_categories=self._cols_categories,
-                idx_categories=self._idx_categories
+                idx_categories=self._idx_categories,
             )
 
         return self._categorical_dataframe
@@ -148,8 +146,9 @@ class FEols:
             {'fe_name': 'number of categories', ...} descending by n of cats
 
         """
-        fe_cats = {c: len(self.categorical_dataframe[c].cat.categories)
-                   for c in self.fe}
+        fe_cats = {
+            c: len(self.categorical_dataframe[c].cat.categories) for c in self.fe
+        }
 
         fe_cats = dict(sorted(fe_cats.items(), key=lambda x: -x[1]))
 
@@ -158,8 +157,10 @@ class FEols:
     @property
     def clusters_categories_dict(self) -> dict:
         """n categories for each specified cluster var"""
-        clusters_cats = {c: len(self.categorical_dataframe[c].cat.categories)
-                         for c in self.cluster_names}
+        clusters_cats = {
+            c: len(self.categorical_dataframe[c].cat.categories)
+            for c in self.cluster_names
+        }
 
         clusters_cats = dict(sorted(clusters_cats.items(), key=lambda x: -x[1]))
 
@@ -173,7 +174,7 @@ class FEols:
             self._nested_fe = find_nested_fe(
                 categorical_data=self.categorical_dataframe,
                 fe=self.fe,
-                cluster_names=self.cluster_names
+                cluster_names=self.cluster_names,
             )
 
         return self._nested_fe
@@ -190,20 +191,18 @@ class FEols:
         cats_keys = list(self.fe_categories_dict.keys())
 
         # absorb the first and generate dummies for the rest
-        self.dummy_fe = [f for f in cats_keys[1:]]
+        self.dummy_fe = list(cats_keys[1:])
         self.absorb_fe = [f for f in self.fe if f not in self.dummy_fe]
 
     # todo: check that the size of all is the same even if formulaic drops nas
-    def _data_matrix(self,
-                     extra_data_matrix: DataFrame = None
-                     ) -> None:
+    def _data_matrix(self, extra_data_matrix: DataFrame = None) -> None:
         """covars matrix + dummy fe if 'absorb_only_one' is True"""
 
         self._y_data_matrix, self._x_data_matrix = build_model_matrix(
             formula=self.formula,
             data=self.data,
             categories_data=self.categorical_dataframe,  # created without singletons if dropped
-            dummy_fe=self.dummy_fe
+            dummy_fe=self.dummy_fe,
         )
 
         self._x_data_matrix_cols = list(self._x_data_matrix)
@@ -218,12 +217,15 @@ class FEols:
     def n_obs(self) -> int:
         return len(self.data)
 
-    def fit(self,
-            drop_absorbed: bool = True,
-            extra_data_matrix: DataFrame = None,
-            dummies_names: list[str] = None,  # formulaic drops the NaNs when getting dummies
-            drop_names: list[str] = None,
-            ):
+    def fit(
+        self,
+        drop_absorbed: bool = True,
+        extra_data_matrix: DataFrame = None,
+        dummies_names: list[
+            str
+        ] = None,  # formulaic drops the NaNs when getting dummies
+        drop_names: list[str] = None,
+    ):
         """fit linearmodels AbsorbingLS"""
 
         self._data_matrix(extra_data_matrix=extra_data_matrix)
@@ -238,14 +240,16 @@ class FEols:
         self.mod = AbsorbingLS(
             dependent=self._y_data_matrix,
             exog=self._x_data_matrix,
-            absorb=self.categorical_dataframe[self.absorb_fe] if self.absorb_fe else None,
+            absorb=self.categorical_dataframe[self.absorb_fe]
+            if self.absorb_fe
+            else None,
             weights=self.data[self.weights_name] if self.weights_name else None,
-            drop_absorbed=drop_absorbed
+            drop_absorbed=drop_absorbed,
         )
 
         with warnings.catch_warnings():
             # AbsorbingEffectWarning
-            warnings.simplefilter('ignore')
+            warnings.simplefilter("ignore")
 
             self.res = self.mod.fit()
 
@@ -254,14 +258,12 @@ class FEols:
             else:
                 all_cols = self._x_data_matrix_cols
 
-            self.dropped_cols = [i for i in all_cols
-                                 if i not in self.res.params.index]
+            self.dropped_cols = [i for i in all_cols if i not in self.res.params.index]
 
             if self.dropped_cols:
-                print(f'{self.dropped_cols} dropped due to multicollinearity')
+                print(f"{self.dropped_cols} dropped due to multicollinearity")
 
-        self.estimated_fe = estimate_absorbed_fixed_effects(
-            mod=self.mod, res=self.res)
+        self.estimated_fe = estimate_absorbed_fixed_effects(mod=self.mod, res=self.res)
 
         return self.res
 
@@ -269,7 +271,7 @@ class FEols:
     def params(self) -> Series:
         """betas"""
         if self.res is None:
-            raise RuntimeError('call fit')
+            raise RuntimeError("call fit")
 
         return self.res.params
 
@@ -278,22 +280,23 @@ class FEols:
         """std errors"""
 
         vcv = self.vcv
-        return pd.Series(np.sqrt(np.diag(vcv)), index=vcv.index, name='std_error')
+        return pd.Series(np.sqrt(np.diag(vcv)), index=vcv.index, name="std_error")
 
-    def result_table(self,
-                     drop_absorbed: bool = True,
-                     extra_data_matrix: DataFrame = None,
-                     alpha: float = 0.05,
-                     dummies_names: list[str] = None,  # formulaic drops the NaNs
-                     drop_names: list[str] = None,
-                     ) -> DataFrame:
+    def result_table(
+        self,
+        drop_absorbed: bool = True,
+        extra_data_matrix: DataFrame = None,
+        alpha: float = 0.05,
+        dummies_names: list[str] = None,  # formulaic drops the NaNs
+        drop_names: list[str] = None,
+    ) -> DataFrame:
 
         if self.res is None:  # run AbsorbingLS
             self.fit(
                 drop_absorbed=drop_absorbed,
                 extra_data_matrix=extra_data_matrix,
                 dummies_names=dummies_names,
-                drop_names=drop_names
+                drop_names=drop_names,
             )
 
         params = self.params
@@ -311,7 +314,7 @@ class FEols:
             params=params,
             std_errors=std_errors,
             resid=None,  # todo: resid, with debiased
-            alpha=alpha
+            alpha=alpha,
         )
 
         return pd.concat([params, std_errors, t_stats, pv, ci], axis=1)
@@ -320,14 +323,14 @@ class FEols:
     def vcv(self) -> DataFrame:
 
         if self.res is None:
-            raise RuntimeError('call fit')
+            raise RuntimeError("call fit")
 
         if self.cluster_names:
             if len(self.cluster_names) > 1:
                 # todo: two-way clustering + other types if needed
-                raise ValueError('only one way clustering allowed')
+                raise ValueError("only one way clustering allowed")
 
-            self._cov_estimator = f'clustered, with {self.cluster_names} clusters'
+            self._cov_estimator = f"clustered, with {self.cluster_names} clusters"
 
             return one_way_clustered_vcv(
                 y=self.absorbed_dependent.to_numpy().flatten(),
@@ -335,7 +338,7 @@ class FEols:
                 params=self.params,
                 clusters=self.categorical_dataframe[self.cluster_names[0]].cat.codes,
                 dof_a=self.dof_a,
-                dof_m=self.dof_m
+                dof_m=self.dof_m,
             )
         else:
             self._cov_estimator = self.res.cov_estimator
@@ -355,7 +358,7 @@ class FEols:
     def resids(self) -> Series:
 
         if self.res is None:
-            raise RuntimeError('call fit')
+            raise RuntimeError("call fit")
 
         return self.res.resids
 
@@ -363,7 +366,7 @@ class FEols:
     def wresids(self) -> Series:
 
         if self.res is None:
-            raise RuntimeError('call fit')
+            raise RuntimeError("call fit")
 
         return self.res.wresids
 
@@ -377,10 +380,13 @@ class FEols:
         """degrees of freedom model"""
 
         if self.res is None:
-            raise RuntimeError('call fit')
+            raise RuntimeError("call fit")
 
-        self._dof_m = (len(self.params) if not self.fe else
-                       len(self.params[lambda x: ~x.index.isin(['Intercept'])]))
+        self._dof_m = (
+            len(self.params)
+            if not self.fe
+            else len(self.params[lambda x: ~x.index.isin(["Intercept"])])
+        )
 
         return self._dof_m
 
@@ -394,7 +400,9 @@ class FEols:
                 not_nested_fe = [i for i in self.fe if i not in self.nested_fe]
 
                 # sorted by largest number of categories
-                not_nested_fe = [k for k in self.fe_categories_dict if k in not_nested_fe]
+                not_nested_fe = [
+                    k for k in self.fe_categories_dict if k in not_nested_fe
+                ]
 
             else:
                 not_nested_fe = self.fe
@@ -416,11 +424,13 @@ class FEols:
                     algo = create(
                         self.categorical_dataframe[not_nested_fe],
                         drop_singletons=False,
-                        compute_degrees=True
+                        compute_degrees=True,
                     )
 
                     if not self.drop_singletons:
-                        singletons = algo.singletons if algo.singletons is not None else 0
+                        singletons = (
+                            algo.singletons if algo.singletons is not None else 0
+                        )
 
                         # be careful, just using this for checks in the imputation code
                         return algo.degrees + singletons

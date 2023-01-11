@@ -2,16 +2,13 @@
 # https://github.com/vveitch/causality-tutorials/blob/main/difference_in_differences.ipynb
 
 # THIS MODULE is A WORK IN PROGRESS
+from __future__ import annotations
 
 import numpy as np
 from numpy import ndarray
-
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-
-from sklearn.model_selection import (
-    KFold,
-    StratifiedKFold)
+from sklearn.model_selection import KFold, StratifiedKFold
 
 # ----------------- conditional expected outcome -----------------------
 
@@ -23,9 +20,7 @@ def make_outcome_model(random_seed=123):
 
     # return LinearRegression()
     return RandomForestRegressor(
-        random_state=random_seed,
-        n_estimators=100,
-        max_depth=2
+        random_state=random_seed, n_estimators=100, max_depth=2
     )
 
 
@@ -37,21 +32,19 @@ def make_pscore_model():
 
     #  return LogisticRegression(max_iter=1000)
 
-    return RandomForestClassifier(
-        n_estimators=100,
-        max_depth=2
-    )
+    return RandomForestClassifier(n_estimators=100, max_depth=2)
 
 
 # ------------------------- cross fitting ------------------------------
 
 
 def predict_treatment(
-        exog: ndarray,
-        treated: ndarray,
-        n_splits: int,
-        pscore_model: BaseEstimator = None,
-        random_seed=123):
+    exog: ndarray,
+    treated: ndarray,
+    n_splits: int,
+    pscore_model: BaseEstimator = None,
+    random_seed=123,
+):
     """
     K fold cross-fitting for the model predicting the treatment, for each unit
 
@@ -78,11 +71,7 @@ def predict_treatment(
 
     pred = np.full_like(treated, np.nan, dtype=float)
 
-    kf = StratifiedKFold(
-        n_splits=n_splits,
-        shuffle=True,
-        random_state=random_seed
-    )
+    kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_seed)
 
     for train_idx, test_idx in kf.split(exog, treated):
 
@@ -102,13 +91,14 @@ def predict_treatment(
 
 
 def predict_outcome(
-        endog: ndarray,
-        exog: ndarray,
-        treated: ndarray,
-        n_splits: int,
-        outcome_type: str,
-        outcome_model: BaseEstimator = None,
-        random_seed=123):
+    endog: ndarray,
+    exog: ndarray,
+    treated: ndarray,
+    n_splits: int,
+    outcome_type: str,
+    outcome_model: BaseEstimator = None,
+    random_seed=123,
+):
     """
     K fold cross-fitting for the model predicting the outcome, for each unit
 
@@ -141,19 +131,11 @@ def predict_outcome(
     pred_0 = np.full_like(treated, np.nan, dtype=float)
     pred_1 = np.full_like(endog, np.nan, dtype=float)
 
-    if outcome_type == 'binary':
-        kf = StratifiedKFold(
-            n_splits=n_splits,
-            shuffle=True,
-            random_state=random_seed
-        )
+    if outcome_type == "binary":
+        kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_seed)
 
-    elif outcome_type == 'continuous':
-        kf = KFold(
-            n_splits=n_splits,
-            shuffle=True,
-            random_state=random_seed
-        )
+    elif outcome_type == "continuous":
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_seed)
 
     for train_idx, test_idx in kf.split(exog, endog):
 
@@ -165,19 +147,19 @@ def predict_outcome(
         # include the treatment as input feature
         q.fit(np.c_[exog, treated][train_idx], endog[train_idx])
 
-        if outcome_type == 'binary':
+        if outcome_type == "binary":
             pred_0[test_idx] = q.predict_proba(
-                np.c_[exog, np.zeros(exog.shape[0])][test_idx])[:, 1]
+                np.c_[exog, np.zeros(exog.shape[0])][test_idx]
+            )[:, 1]
 
             pred_1[test_idx] = q.predict_proba(
-                np.c_[exog, np.ones(exog.shape[0])][test_idx])[:, 1]
+                np.c_[exog, np.ones(exog.shape[0])][test_idx]
+            )[:, 1]
 
-        elif outcome_type == 'continuous':
-            pred_0[test_idx] = q.predict(
-                np.c_[exog, np.zeros(exog.shape[0])][test_idx])
+        elif outcome_type == "continuous":
+            pred_0[test_idx] = q.predict(np.c_[exog, np.zeros(exog.shape[0])][test_idx])
 
-            pred_1[test_idx] = q.predict(
-                np.c_[exog, np.ones(exog.shape[0])][test_idx])
+            pred_1[test_idx] = q.predict(np.c_[exog, np.ones(exog.shape[0])][test_idx])
 
     assert np.isnan(pred_0).sum() == 0
     assert np.isnan(pred_1).sum() == 0
@@ -188,12 +170,15 @@ def predict_outcome(
 # ----------------------------------------------------------------------
 # Combine predicted values and data into estimate of ATT
 
-def aiptw_att_if(outcome_0,
-                 pscore,
-                 endog: ndarray,
-                 treated: ndarray,
-                 prob_t: ndarray = None,
-                 **kwargs):
+
+def aiptw_att_if(
+    outcome_0,
+    pscore,
+    endog: ndarray,
+    treated: ndarray,
+    prob_t: ndarray = None,
+    **kwargs,
+):
     """
     DoubleML estimator for the ATT
 
@@ -204,35 +189,37 @@ def aiptw_att_if(outcome_0,
     if prob_t is None:
         prob_t = treated.mean()  # estimate marginal probability of treatment
 
-    tau_hat = (treated * (endog - outcome_0) - (1 - treated) *
-               (pscore / (1 - pscore)) * (endog - outcome_0)
-               ).mean() / prob_t
+    tau_hat = (
+        treated * (endog - outcome_0)
+        - (1 - treated) * (pscore / (1 - pscore)) * (endog - outcome_0)
+    ).mean() / prob_t
 
-    scores = (treated * (endog - outcome_0) - (1 - treated) *
-              (pscore / (1 - pscore)) * (endog - outcome_0)
-              - tau_hat * treated) / prob_t
+    scores = (
+        treated * (endog - outcome_0)
+        - (1 - treated) * (pscore / (1 - pscore)) * (endog - outcome_0)
+        - tau_hat * treated
+    ) / prob_t
 
     # std_hat = np.std(scores) / np.sqrt(n observations)
     # f"The estimate is {tau_hat} ± {1.96 * std_hat}"
 
-    return {'att': tau_hat, 'influence_func': scores}
+    return {"att": tau_hat, "influence_func": scores}
 
 
 # ----------------------------------------------------------------------
 
 
-def aiptw_double_ml_did_panel(endog: ndarray,
-                              exog: ndarray,
-                              treated: ndarray,
-                              pscore_model: BaseEstimator = None,
-                              outcome_model: BaseEstimator = None,
-                              outcome_type: str = 'continuous',  # 'binary'
-                              **other):
+def aiptw_double_ml_did_panel(
+    endog: ndarray,
+    exog: ndarray,
+    treated: ndarray,
+    pscore_model: BaseEstimator = None,
+    outcome_model: BaseEstimator = None,
+    outcome_type: str = "continuous",  # 'binary'
+    **other,
+):
     pscore = predict_treatment(
-        pscore_model=pscore_model,
-        exog=exog,
-        treated=treated,
-        n_splits=10
+        pscore_model=pscore_model, exog=exog, treated=treated, n_splits=10
     )
 
     outcome_0, outcome_1 = predict_outcome(
@@ -241,13 +228,9 @@ def aiptw_double_ml_did_panel(endog: ndarray,
         exog=exog,
         treated=treated,
         n_splits=10,
-        outcome_type=outcome_type
+        outcome_type=outcome_type,
     )
 
-    res = aiptw_att_if(
-        outcome_0=outcome_0,
-        pscore=pscore,
-        endog=endog,
-        treated=treated)
+    res = aiptw_att_if(outcome_0=outcome_0, pscore=pscore, endog=endog, treated=treated)
 
     return res

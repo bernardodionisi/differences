@@ -1,34 +1,29 @@
 from __future__ import annotations
 
+import inspect
+from collections import namedtuple
+from itertools import chain
+from typing import Callable
+
 import numpy as np
 import pandas as pd
 from pandas import DataFrame, Index
-
-import inspect
-from itertools import chain
-
-from collections import namedtuple
-from typing import Callable
-
 from scipy.sparse import issparse
 
 from ..attgt.attgt_cal import get_standard_errors
-from ..attgt.utility import (get_agg_attr_name,
-                             list_fs_ntl,
-                             fix_std_error_cols,
-                             out_df_index,
-                             replace_dates)
+from ..attgt.utility import (fix_std_error_cols, get_agg_attr_name,
+                             list_fs_ntl, out_df_index, replace_dates)
 
 
 class _Difference:
-    def __init__(self,
-                 alpha: float = 0.05,
-                 boot_iterations: int = 0,
-                 random_state: int = None,
-
-                 n_jobs_boot: int = 1,
-                 backend_boot: str = 'loky',
-                 ):
+    def __init__(
+        self,
+        alpha: float = 0.05,
+        boot_iterations: int = 0,
+        random_state: int = None,
+        n_jobs_boot: int = 1,
+        backend_boot: str = "loky",
+    ):
 
         # if isinstance(diff_ntls, list):
         #     if len(diff_ntls) != 2:
@@ -46,10 +41,11 @@ class _Difference:
         self.n_jobs_boot = n_jobs_boot
         self.backend_boot = backend_boot
 
-    def _get_standard_errors(self,
-                             ntl: list[namedtuple],
-                             cluster_groups: np.ndarray = None,
-                             ) -> list[namedtuple]:
+    def _get_standard_errors(
+        self,
+        ntl: list[namedtuple],
+        cluster_groups: np.ndarray = None,
+    ) -> list[namedtuple]:
         return get_standard_errors(
             ntl=ntl,
             alpha=self.alpha,
@@ -57,16 +53,18 @@ class _Difference:
             boot_iterations=self.boot_iterations,
             random_state=self.random_state,
             backend_boot=self.backend_boot,
-            n_jobs_boot=self.n_jobs_boot
+            n_jobs_boot=self.n_jobs_boot,
         )
 
-    def get_difference(self,
-                       diff_pairs_ntls: dict[str, list] | list,
-                       type_of_aggregation: str | None,
-                       iterating_samples: bool,  # 'sample' 'stratum'
-                       overall: bool = False,
-                       sample_masks: list = None,
-                       cluster_groups: np.ndarray | dict[str, np.ndarray] = None):
+    def get_difference(
+        self,
+        diff_pairs_ntls: dict[str, list] | list,
+        type_of_aggregation: str | None,
+        iterating_samples: bool,  # 'sample' 'stratum'
+        overall: bool = False,
+        sample_masks: list = None,
+        cluster_groups: np.ndarray | dict[str, np.ndarray] = None,
+    ):
 
         # res = getattr(self, attr_name, None)
         # if res is None:
@@ -83,8 +81,10 @@ class _Difference:
 
         if names:
             if len(names) != len(all_pairs_ntls):
-                raise ValueError('something went wrong in the stratum/samples difference, '
-                                 'there are more names than pairs')
+                raise ValueError(
+                    "something went wrong in the stratum/samples difference, "
+                    "there are more names than pairs"
+                )
 
         sample_name, strata_name = None, None
         clusters = cluster_groups  # this may be a dict
@@ -114,13 +114,10 @@ class _Difference:
                 overall=overall,
                 difference_between=difference_between,
                 sample_name=sample_name,
-                strata_name=strata_name
+                strata_name=strata_name,
             )
 
-            res_ntl = self._get_standard_errors(
-                ntl=res_ntl,
-                cluster_groups=clusters
-            )
+            res_ntl = self._get_standard_errors(ntl=res_ntl, cluster_groups=clusters)
 
             res.extend(res_ntl)
 
@@ -142,37 +139,38 @@ def name_difference_between(diff_pairs_ntls):
     #     first_name = ' & '.join(map(str, first_name))
     #     second_name = ' & '.join(map(str, first_name))
 
-    return ' - '.join((str(first_name), str(second_name)))
+    return " - ".join((str(first_name), str(second_name)))
 
 
 # ------------------------- differences --------------------------------
 
-def get_difference_ntl(first_ntl: list[namedtuple],
-                       second_ntl: list[namedtuple],
-                       difference_between: str,
-                       sample_name: str,
-                       strata_name: str,
-                       sample_masks: list[np.ndarray] = None,  # list of two sample masks
-                       type_of_aggregation: str = None,
-                       overall: bool = False,
-                       ) -> list[namedtuple]:
+
+def get_difference_ntl(
+    first_ntl: list[namedtuple],
+    second_ntl: list[namedtuple],
+    difference_between: str,
+    sample_name: str,
+    strata_name: str,
+    sample_masks: list[np.ndarray] = None,  # list of two sample masks
+    type_of_aggregation: str = None,
+    overall: bool = False,
+) -> list[namedtuple]:
     """set up for difference between two estimates"""
 
     attr_name = get_agg_attr_name(
-        type_of_aggregation=type_of_aggregation,
-        overall=overall
+        type_of_aggregation=type_of_aggregation, overall=overall
     )
 
     # convert type_of_aggregation to id_fields to be used to find the comparisons
     id_fields = {
-        'att_ctg': ['cohort', 'base_period', 'time'],
-        'cohort': ['cohort'],
-        'event': ['relative_period'],
-        'time': ['time'],
-        'simple': [],
-        'cohort_overall': [],
-        'event_overall': [],
-        'time_overall': [],
+        "att_ctg": ["cohort", "base_period", "time"],
+        "cohort": ["cohort"],
+        "event": ["relative_period"],
+        "time": ["time"],
+        "simple": [],
+        "cohort_overall": [],
+        "event_overall": [],
+        "time_overall": [],
     }
 
     difference_ntl = get_differences_between(
@@ -182,20 +180,21 @@ def get_difference_ntl(first_ntl: list[namedtuple],
         id_fields=id_fields[attr_name],
         difference_between=difference_between,
         sample_name=sample_name,
-        strata_name=strata_name
+        strata_name=strata_name,
     )
 
     return difference_ntl
 
 
-def get_differences_between(first_ntl: list[namedtuple],
-                            second_ntl: list[namedtuple],
-                            difference_between: str,
-                            sample_name: str,
-                            strata_name: str,
-                            id_fields: list[str] = None,
-                            sample_masks: list[np.ndarray] = None,
-                            ) -> list[namedtuple]:
+def get_differences_between(
+    first_ntl: list[namedtuple],
+    second_ntl: list[namedtuple],
+    difference_between: str,
+    sample_name: str,
+    strata_name: str,
+    id_fields: list[str] = None,
+    sample_masks: list[np.ndarray] = None,
+) -> list[namedtuple]:
     """
     finds the namedtuple(s) to subtract & subtracts them
 
@@ -256,7 +255,7 @@ def get_differences_between(first_ntl: list[namedtuple],
                         sample_masks=sample_masks,
                         difference_between=difference_between,
                         sample_name=sample_name,
-                        strata_name=strata_name
+                        strata_name=strata_name,
                     )
 
                     ntl_output.append(nt)
@@ -270,7 +269,7 @@ def get_differences_between(first_ntl: list[namedtuple],
             sample_masks=sample_masks,
             difference_between=difference_between,
             sample_name=sample_name,
-            strata_name=strata_name
+            strata_name=strata_name,
         )
 
         ntl_output.append(nt)
@@ -278,15 +277,16 @@ def get_differences_between(first_ntl: list[namedtuple],
     return ntl_output
 
 
-def diff_att_if(first_nt: namedtuple | list,
-                second_nt: namedtuple | list,
-                difference_between: str,
-                sample_name: str,
-                strata_name: str,
-                id_fields: list,
-                id_fields_values: tuple,
-                sample_masks: list = None,
-                ) -> namedtuple:
+def diff_att_if(
+    first_nt: namedtuple | list,
+    second_nt: namedtuple | list,
+    difference_between: str,
+    sample_name: str,
+    strata_name: str,
+    id_fields: list,
+    id_fields_values: tuple,
+    sample_masks: list = None,
+) -> namedtuple:
     """calculates the difference in estimates and returns namedtuple"""
 
     # sample idxs to get the right indx to insert the influence function values
@@ -294,13 +294,13 @@ def diff_att_if(first_nt: namedtuple | list,
 
     if isinstance(first_nt, list):
         if len(first_nt) != 1:
-            raise ValueError('len of first_nt, when list, must be equal to 1')
+            raise ValueError("len of first_nt, when list, must be equal to 1")
         # simple aggregate, overall fr example
         first_nt = first_nt[0]
 
     if isinstance(second_nt, list):
         if len(second_nt) != 1:
-            raise ValueError('len of second_nt, when list, must be equal to 1')
+            raise ValueError("len of second_nt, when list, must be equal to 1")
         # simple aggregate, overall fr example
         second_nt = second_nt[0]
 
@@ -316,8 +316,12 @@ def diff_att_if(first_nt: namedtuple | list,
         first_idxs, second_idxs = get_sample_idxs(sample_masks)
 
         if issparse(first_nt.influence_func):
-            diff_influence_func[first_idxs] = first_nt.influence_func.todense().flatten()
-            diff_influence_func[second_idxs] = -1 * second_nt.influence_func.todense().flatten()
+            diff_influence_func[
+                first_idxs
+            ] = first_nt.influence_func.todense().flatten()
+            diff_influence_func[second_idxs] = (
+                -1 * second_nt.influence_func.todense().flatten()
+            )
         else:
             diff_influence_func[first_idxs] = first_nt.influence_func
             diff_influence_func[second_idxs] = -1 * second_nt.influence_func
@@ -331,13 +335,11 @@ def diff_att_if(first_nt: namedtuple | list,
     else:  # difference between strata
         if issparse(first_nt.influence_func):
             diff_influence_func = (
-                    first_nt.influence_func.todense().flatten() -
-                    second_nt.influence_func.todense().flatten()
+                first_nt.influence_func.todense().flatten()
+                - second_nt.influence_func.todense().flatten()
             )
         else:
-            diff_influence_func = (
-                    first_nt.influence_func - second_nt.influence_func
-            )
+            diff_influence_func = first_nt.influence_func - second_nt.influence_func
 
     nt = output_difference_namedtuple(
         difference_between,
@@ -347,7 +349,7 @@ def diff_att_if(first_nt: namedtuple | list,
         insert_fields=id_fields,
         nt_name=type(first_nt).__name__,
         sample_name=sample_name,
-        strata_name=strata_name
+        strata_name=strata_name,
     )
 
     return nt
@@ -356,37 +358,32 @@ def diff_att_if(first_nt: namedtuple | list,
 # ------------------------ output --------------------------------------
 
 
-def output_difference_namedtuple(*args,
-                                 nt_name: str,
-                                 insert_fields: list,
-                                 sample_name: str,
-                                 strata_name: str,
-                                 ):
+def output_difference_namedtuple(
+    *args,
+    nt_name: str,
+    insert_fields: list,
+    sample_name: str,
+    strata_name: str,
+):
     """creates the namedtuple containing the difference in estimates results"""
 
     # namedtuple needs to be consistent with the other nt,
     # these namedtuple approach will likely be changed, should not affect the API
 
     if strata_name is not None:
-        insert_name, insert_value = ['stratum'], strata_name
+        insert_name, insert_value = ["stratum"], strata_name
     elif sample_name is not None:
-        insert_name, insert_value = ['sample_name'], sample_name
+        insert_name, insert_value = ["sample_name"], sample_name
     else:
         insert_name, insert_value = [], None
 
     fields = list(
         chain(
             insert_name,
-            ['difference_between'],
+            ["difference_between"],
             insert_fields,
-            ['ATT',
-             'influence_func',
-
-             'std_error',
-             'lower',
-             'upper',
-             'boot_iterations'
-             ])
+            ["ATT", "influence_func", "std_error", "lower", "upper", "boot_iterations"],
+        )
     )
 
     # std_error, lower, upper, boot_iterations
@@ -397,7 +394,7 @@ def output_difference_namedtuple(*args,
         missing = 4  # std_error, lower, upper, boot_iterations
         args = *args, *[np.NaN] * missing
 
-    nt = namedtuple(f'Difference{nt_name}', fields)
+    nt = namedtuple(f"Difference{nt_name}", fields)
 
     if insert_value is not None:
         return nt(insert_value, *args)
@@ -405,38 +402,30 @@ def output_difference_namedtuple(*args,
         return nt(*args)
 
 
-def difference_ntl_to_dataframe(ntl: list,
-                                date_map: dict = None) -> DataFrame:
+def difference_ntl_to_dataframe(ntl: list, date_map: dict = None) -> DataFrame:
     """difference results to a dataframe"""
 
     name_table = type(ntl[0]).__name__
-    boot_iterations = getattr(ntl[0], 'boot_iterations')
+    boot_iterations = ntl[0].boot_iterations
 
     if boot_iterations:
-        se_info, conf_info = 'bootstrap', 'simult. conf. band'
+        se_info, conf_info = "bootstrap", "simult. conf. band"
     else:
-        se_info, conf_info = 'analytic', 'pointwise conf. band'
+        se_info, conf_info = "analytic", "pointwise conf. band"
 
-    exclude_fields = [
-        'influence_func',
-        'boot_iterations'
-    ]
+    exclude_fields = ["influence_func", "boot_iterations"]
 
-    include_fields = [f for f in ntl[0]._fields
-                      if f not in exclude_fields]
+    include_fields = [f for f in ntl[0]._fields if f not in exclude_fields]
 
     values = map(lambda x: (getattr(x, v) for v in include_fields), ntl)
     out_df = DataFrame(values, columns=include_fields)
 
     out_df = fix_std_error_cols(out_df=out_df)
 
-    output = replace_dates(out_df=out_df, date_map=date_map)
+    replace_dates(out_df=out_df, date_map=date_map)
 
     out_df = out_df_index(
-        out_df=out_df,
-        name_table=name_table,
-        se_info=se_info,
-        conf_info=conf_info
+        out_df=out_df, name_table=name_table, se_info=se_info, conf_info=conf_info
     )
     return out_df
 
@@ -444,9 +433,10 @@ def difference_ntl_to_dataframe(ntl: list,
 # ------------------ pre-processing helpers ----------------------------
 
 
-def parse_split_sample(data: DataFrame,
-                       split_sample_by: Callable | str = None,
-                       ):
+def parse_split_sample(
+    data: DataFrame,
+    split_sample_by: Callable | str = None,
+):
     """finds the masks for the data given split_sample_by
 
     returns a dict {'name of sample': data mask for sample}"""
@@ -455,97 +445,112 @@ def parse_split_sample(data: DataFrame,
         return None
 
     elif isinstance(split_sample_by, str):
-        return {f"{split_sample_by} = {i}": {'sample_mask': np.array(data[split_sample_by] == i)}
-                for i in data[split_sample_by].dropna().unique()
-                }
+        return {
+            f"{split_sample_by} = {i}": {
+                "sample_mask": np.array(data[split_sample_by] == i)
+            }
+            for i in data[split_sample_by].dropna().unique()
+        }
 
     elif isinstance(split_sample_by, Callable):
 
         source_code = inspect.getsource(split_sample_by)
 
         # make the string look nicer if lambda is passed
-        if 'lambda' in source_code:
-            source_code = source_code.split('split_sample_by=')[-1]
-            if source_code.count(':') == 1:
-                source_code = source_code.split(':')[-1]
+        if "lambda" in source_code:
+            source_code = source_code.split("split_sample_by=")[-1]
+            if source_code.count(":") == 1:
+                source_code = source_code.split(":")[-1]
 
         source_code = source_code.strip()
-        if source_code.endswith(','):
+        if source_code.endswith(","):
             source_code = source_code[:-1]
 
         mask = np.array(split_sample_by(data))
 
-        return {source_code: {'sample_mask': mask}, f'NOT-{source_code}': {'sample_mask': ~mask}}
+        return {
+            source_code: {"sample_mask": mask},
+            f"NOT-{source_code}": {"sample_mask": ~mask},
+        }
 
     else:
         raise ValueError("invalid 'split_sample_by'")
 
 
-def preprocess_difference(difference: bool | list,
-                          sample_names: list,
-                          strata: list | None
-                          ) -> dict[str, list] | tuple:  # strata, samples
+def preprocess_difference(
+    difference: bool | list, sample_names: list, strata: list | None
+) -> dict[str, list] | tuple:  # strata, samples
     difference_between = {}
 
-    if sample_names is None or sample_names == ['full_sample']:
+    if sample_names is None or sample_names == ["full_sample"]:
         sample_names = []
 
     if strata is None:
         strata = []
 
     if not sample_names and not strata:
-        raise ValueError('in order to calculate the difference the estimation must be run on a '
-                         'split sample and/or for different treatment strata')
+        raise ValueError(
+            "in order to calculate the difference the estimation must be run on a "
+            "split sample and/or for different treatment strata"
+        )
 
     if isinstance(difference, bool):
         if min(len(sample_names), len(strata)) != 2:
-            raise ValueError('difference must be between two elements, provide the names '
-                             'of the two samples or strata to subtract in a list')
+            raise ValueError(
+                "difference must be between two elements, provide the names "
+                "of the two samples or strata to subtract in a list"
+            )
         elif len(sample_names) == 2 and len(strata) == 2:
-            raise ValueError('unable to determine the dimension to subtract '
-                             'between samples and strata, please dictionary')
+            raise ValueError(
+                "unable to determine the dimension to subtract "
+                "between samples and strata, please dictionary"
+            )
 
         # if the min len is 2 then subtract that for each of the other
 
         if len(strata) == 2:
 
             difference_between = {
-                'difference_strata': strata,
-                'iterate_samples': sample_names
+                "difference_strata": strata,
+                "iterate_samples": sample_names,
             }
 
         elif len(sample_names) == 2:
 
             difference_between = {
-                'difference_samples': sample_names,
-                'iterate_strata': strata
+                "difference_samples": sample_names,
+                "iterate_strata": strata,
             }
 
         return difference_between
 
     elif isinstance(difference, list):
         if len(difference) != 2:
-            raise ValueError('difference must be between two elements')
+            raise ValueError("difference must be between two elements")
 
         sample_names_diff = [s for s in difference if s in sample_names]
         strata_diff = [d for d in difference if d in strata]
 
         if strata_diff and sample_names_diff:
-            raise ValueError("not able to distinguish between sample names and strata names, "
-                             "provide "
-                             "the list of sample names and/or stratum names in a dictionary as "
-                             "{'sample_names': [sample names], strata: [stratum names]}")
+            raise ValueError(
+                "not able to distinguish between sample names and strata names, "
+                "provide "
+                "the list of sample names and/or stratum names in a dictionary as "
+                "{'sample_names': [sample names], strata: [stratum names]}"
+            )
 
         elif strata_diff and not sample_names_diff:
 
             if len(strata_diff) == 2:
                 difference_between = {
-                    'difference_strata': strata_diff,
-                    'iterate_samples': sample_names
+                    "difference_strata": strata_diff,
+                    "iterate_samples": sample_names,
                 }
             else:
-                raise ValueError('difference must be between two elements, provide the names '
-                                 'of the two strata to subtract in a list')
+                raise ValueError(
+                    "difference must be between two elements, provide the names "
+                    "of the two strata to subtract in a list"
+                )
 
             return difference_between
 
@@ -553,37 +558,44 @@ def preprocess_difference(difference: bool | list,
 
             if len(sample_names_diff) == 2:
                 difference_between = {
-                    'difference_samples': sample_names_diff,
-                    'iterate_strata': strata
+                    "difference_samples": sample_names_diff,
+                    "iterate_strata": strata,
                 }
             else:
-                raise ValueError('difference must be between two elements, provide the names '
-                                 'of the two samples to subtract in a list')
+                raise ValueError(
+                    "difference must be between two elements, provide the names "
+                    "of the two samples to subtract in a list"
+                )
 
             return difference_between
 
     elif isinstance(difference, dict):
 
-        strata_diff, sample_names_diff = difference.get('strata'), difference.get(
-            'sample_names')
+        strata_diff, sample_names_diff = difference.get("strata"), difference.get(
+            "sample_names"
+        )
 
         if not strata_diff and not sample_names_diff:
-            raise ValueError("dictionary must be of the format: "
-                             "{'sample_names': [sample names]} or "
-                             "{'strata': [stratum names]} or"
-                             "{'sample_names': [sample names], 'strata': [stratum names]}")
+            raise ValueError(
+                "dictionary must be of the format: "
+                "{'sample_names': [sample names]} or "
+                "{'strata': [stratum names]} or"
+                "{'sample_names': [sample names], 'strata': [stratum names]}"
+            )
 
         elif strata_diff and not sample_names_diff:
             strata_diff = [d for d in strata_diff if d in strata]
 
             if len(strata_diff) == 2:
                 difference_between = {
-                    'difference_strata': strata_diff,
-                    'iterate_samples': sample_names
+                    "difference_strata": strata_diff,
+                    "iterate_samples": sample_names,
                 }
             else:
-                raise ValueError('difference must be between two elements, provide the names '
-                                 'of the two strata to subtract in a list')
+                raise ValueError(
+                    "difference must be between two elements, provide the names "
+                    "of the two strata to subtract in a list"
+                )
 
             return difference_between
 
@@ -591,20 +603,26 @@ def preprocess_difference(difference: bool | list,
             sample_names_diff = [s for s in sample_names_diff if s in sample_names]
 
             if len(sample_names_diff) == 2:
-                difference_between = {'difference_samples': sample_names_diff,
-                                      'iterate_strata': strata}
+                difference_between = {
+                    "difference_samples": sample_names_diff,
+                    "iterate_strata": strata,
+                }
             else:
-                raise ValueError('difference must be between two elements, provide the names '
-                                 'of the two samples to subtract in a list')
+                raise ValueError(
+                    "difference must be between two elements, provide the names "
+                    "of the two samples to subtract in a list"
+                )
 
             return difference_between
 
         else:
             if len(strata_diff) != 2 or len(sample_names_diff) != 2:
-                raise ValueError("if a dictionary with two dictionary must be of the format: "
-                                 "{'sample_names': [2 sample names], strata: [2 stratum names]}"
-                                 "and the difference will be taken between "
-                                 "(sample 0, stratum 0) - (sample 1, stratum 1)")
+                raise ValueError(
+                    "if a dictionary with two dictionary must be of the format: "
+                    "{'sample_names': [2 sample names], strata: [2 stratum names]}"
+                    "and the difference will be taken between "
+                    "(sample 0, stratum 0) - (sample 1, stratum 1)"
+                )
 
             # (sample 0, stratum 0), (sample 1, stratum 1)
             return tuple(zip(sample_names_diff, strata_diff))
@@ -615,8 +633,10 @@ def preprocess_difference(difference: bool | list,
 
 # ----------------------- helpers --------------------------------------
 
-def resize_sample_masks(sample_masks: list
-                        ) -> tuple[np.ndarray | None, list[np.ndarray]]:
+
+def resize_sample_masks(
+    sample_masks: list,
+) -> tuple[np.ndarray | None, list[np.ndarray]]:
     """helper function to resize masks when the data split > 2
 
     in case the two samples do not make up the full sample
@@ -631,7 +651,7 @@ def resize_sample_masks(sample_masks: list
     """
 
     if len(sample_masks) != 2:
-        raise ValueError('only 2 masks allowed')
+        raise ValueError("only 2 masks allowed")
 
     first_mask, second_mask = sample_masks
 
@@ -652,11 +672,9 @@ def resize_sample_masks(sample_masks: list
     return None, sample_masks
 
 
-def get_ds_masks(result_dict: dict,
-                 difference: list,
-                 entity_index: Index,
-                 cluster_by_entity: bool
-                 ) -> tuple[None | np.ndarray, list]:
+def get_ds_masks(
+    result_dict: dict, difference: list, entity_index: Index, cluster_by_entity: bool
+) -> tuple[None | np.ndarray, list]:
     """
     get data mask + sample masks [2 masks only]
 
@@ -674,7 +692,7 @@ def get_ds_masks(result_dict: dict,
     # boolean masks for each (of the 2) samples. same order as difference list
     # data mask is None if the 2 samples make up the full data
     data_mask, sample_masks = resize_sample_masks(
-        sample_masks=[result_dict[n]['sample_mask'] for n in difference]
+        sample_masks=[result_dict[n]["sample_mask"] for n in difference]
     )
 
     if data_mask is not None:
@@ -691,11 +709,12 @@ def get_ds_masks(result_dict: dict,
     return data_mask, sample_masks
 
 
-def get_masks_for_difference(entity_index: pd.Index,
-                             entity_name: str,
-                             first_mask: np.ndarray,
-                             entity_level: bool = False
-                             ) -> list[np.ndarray, np.ndarray]:
+def get_masks_for_difference(
+    entity_index: pd.Index,
+    entity_name: str,
+    first_mask: np.ndarray,
+    entity_level: bool = False,
+) -> list[np.ndarray, np.ndarray]:
     if not entity_level:
         return [first_mask, ~first_mask]
 
@@ -710,10 +729,9 @@ def get_masks_for_difference(entity_index: pd.Index,
     return [entity_mask, ~entity_mask]
 
 
-def get_sample_idxs(sample_masks: list
-                    ) -> list[np.ndarray, np.ndarray]:
+def get_sample_idxs(sample_masks: list) -> list[np.ndarray, np.ndarray]:
     """finds the indexes where the masks are True"""
     if len(sample_masks) != 2:
-        raise ValueError('only 2 masks allowed')
+        raise ValueError("only 2 masks allowed")
 
     return [np.where(sample_masks[0])[0], np.where(sample_masks[1])[0]]

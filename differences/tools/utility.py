@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-import numpy as np
-import joblib
-
-from pandas import DataFrame
+from contextlib import contextmanager
 from typing import NamedTuple
 
+import joblib
+import numpy as np
+from pandas import DataFrame
 from scipy.sparse import issparse
-from contextlib import contextmanager
-
 
 # ------------------------- formulaic ----------------------------------
 
 # useful issues:
 # https://github.com/matthewwardrop/formulaic/issues/32
 # https://github.com/matthewwardrop/formulaic/issues/60
+
 
 def parse_fe_from_formula(formula) -> tuple[str, list]:
     """
@@ -23,40 +22,42 @@ def parse_fe_from_formula(formula) -> tuple[str, list]:
     formula: 'y ~ x + z | fe1 + fe2'
     """
     try:
-        formula, fe = formula.split('|')
+        formula, fe = formula.split("|")
     except ValueError:
         return formula, []
 
-    fe = [i.strip() for i in fe.split('+') if i.strip()]
+    fe = [i.strip() for i in fe.split("+") if i.strip()]
 
     return formula, fe
 
 
-def process_formula(formula: str,
-                    entity_name: str,
-                    time_name: str,
-                    stacked: bool = False,
-                    return_fe: bool = False):
-    if '~' not in formula:
-        formula = f'{formula} ~ 1'
+def process_formula(
+    formula: str,
+    entity_name: str,
+    time_name: str,
+    stacked: bool = False,
+    return_fe: bool = False,
+):
+    if "~" not in formula:
+        formula = f"{formula} ~ 1"
 
     try:
-        spec, fe = formula.split('|')
+        spec, fe = formula.split("|")
 
         if not fe.strip():  # not ''
             fe = []
             formula = spec.strip()
         else:
-            fe = [i.strip() for i in fe.split('+') if i.strip()]
+            fe = [i.strip() for i in fe.split("+") if i.strip()]
 
     except ValueError:  # if no | then use two-way fe
 
         fe = [entity_name, time_name]
 
         if stacked:
-            formula = f'{formula} | {entity_name}_stack + {time_name}_stack'
+            formula = f"{formula} | {entity_name}_stack + {time_name}_stack"
         else:
-            formula = f'{formula} | {entity_name} + {time_name}'
+            formula = f"{formula} | {entity_name} + {time_name}"
 
         # to use fe, then just specify a formula with |
 
@@ -73,16 +74,17 @@ def parse_fe_from_formula(formula: str) -> tuple[str, list]:
     formula: 'y ~ x + z | fe1 + fe2'
     """
     try:
-        formula, fe = formula.split('|')
+        formula, fe = formula.split("|")
     except ValueError:
         return formula, []
 
-    fe = [i.strip() for i in fe.split('+') if i.strip()]
+    fe = [i.strip() for i in fe.split("+") if i.strip()]
 
     return formula, fe
 
 
 # --------------------------- groupby ----------------------------------
+
 
 def group_sums(x, codes):
     """sourced from: https://github.com/iamlemec/fastreg/blob/master/fastreg/tools.py"""
@@ -91,18 +93,17 @@ def group_sums(x, codes):
         x = x.tocsc()
         C = max(codes) + 1
         idx = [(x.indptr[i], x.indptr[i + 1]) for i in range(K)]
-        return np.vstack([
-            np.bincount(
-                codes[x.indices[i:j]], weights=x.data[i:j], minlength=C
-            ) for i, j in idx
-        ]).T
+        return np.vstack(
+            [
+                np.bincount(codes[x.indices[i:j]], weights=x.data[i:j], minlength=C)
+                for i, j in idx
+            ]
+        ).T
     if np.ndim(x) == 1:
         return np.bincount(codes, weights=x)
     else:
         _, K = x.shape
-        return np.vstack([
-            np.bincount(codes, weights=x[:, j]) for j in range(K)
-        ]).T
+        return np.vstack([np.bincount(codes, weights=x[:, j]) for j in range(K)]).T
 
 
 # sparsity handled by group_sums
@@ -140,10 +141,11 @@ def tqdm_joblib(tqdm_object):
 
 # --------------------------- plot helpers -----------------------------
 
+
 def get_title(df):
     title = [c[0] for c in list(df)][0]
-    title = ''.join([c if c.islower() else f' {c}' for c in title]).strip()
-    title = title.replace('A T T', 'ATT')
+    title = "".join([c if c.islower() else f" {c}" for c in title]).strip()
+    title = title.replace("A T T", "ATT")
 
     return title
 
@@ -161,10 +163,14 @@ def single_idx(df: DataFrame, return_idx_names: bool = True):
 
 
 def capitalize_details(estimation_details: dict):
-    estimation_details = {
-        str(k).replace('_', ' ').capitalize(): str(v)
-        for k, v in estimation_details.items()
-    } if estimation_details else None
+    estimation_details = (
+        {
+            str(k).replace("_", " ").capitalize(): str(v)
+            for k, v in estimation_details.items()
+        }
+        if estimation_details
+        else None
+    )
 
     return estimation_details
 
@@ -175,9 +181,9 @@ def capitalize_details(estimation_details: dict):
 def bin_start_end(bin_endpoints: bool):
     bin_start, bin_end = False, False
     if bin_endpoints:
-        if bin_endpoints == 'start':
+        if bin_endpoints == "start":
             bin_start = True
-        elif bin_endpoints == 'end':
+        elif bin_endpoints == "end":
             bin_end = True
         else:
             bin_start, bin_end = True, True
@@ -198,8 +204,8 @@ class EventStudyResult(NamedTuple):
 
 # -------------------------- general -----------------------------------
 
+
 def flatten_cols(data):
-    cols = ['_'.join(map(str, vals))
-            for vals in data.columns.to_flat_index()]
+    cols = ["_".join(map(str, vals)) for vals in data.columns.to_flat_index()]
     data.columns = cols
     return data

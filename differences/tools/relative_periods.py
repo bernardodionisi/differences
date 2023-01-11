@@ -1,18 +1,20 @@
-import numpy as np
-import pandas as pd
+from __future__ import annotations
 
 from typing import Optional, Union
 
-from pandas import DataFrame, MultiIndex, Index
+import numpy as np
+import pandas as pd
+from pandas import DataFrame, Index, MultiIndex
 
 from ..tools.panel_utility import panel_has_gaps, reindex_gaps
 
 
-def cohort_info_table(cohort_data: DataFrame,
-                      pivot_values: str,
-                      data_index: Optional[Union[MultiIndex, Index]] = None,
-                      fill_gaps: bool = True,
-                      ) -> DataFrame:
+def cohort_info_table(
+    cohort_data: DataFrame,
+    pivot_values: str,
+    data_index: Optional[Union[MultiIndex, Index]] = None,
+    fill_gaps: bool = True,
+) -> DataFrame:
     """
     pivots cohort_data
 
@@ -39,27 +41,27 @@ def cohort_info_table(cohort_data: DataFrame,
     entity_name = cohort_data.index.name
 
     cohort_table = (
-        cohort_data
-        .sort_index()
+        cohort_data.sort_index()
         .assign(event_number=lambda x: x.groupby(entity_name).cumcount() + 1)
-        .pivot_table(index=entity_name, values=pivot_values, columns='event_number')
+        .pivot_table(index=entity_name, values=pivot_values, columns="event_number")
     )
 
     if data_index is not None:  # expand the cohort_data to panel leve, just for treated
         entity_name, time_name = data_index.names
 
-        cohort_table_rep = (  # only keep treated
-            DataFrame(index=data_index)
-            .loc[lambda x: x.index.get_level_values(entity_name).isin(cohort_table.index)]
-        )
+        cohort_table_rep = DataFrame(index=data_index).loc[  # only keep treated
+            lambda x: x.index.get_level_values(entity_name).isin(cohort_table.index)
+        ]
 
         if fill_gaps:  # fill the gaps in the panel
             gaps = panel_has_gaps(data=cohort_table_rep, return_gaps=True)
             if gaps is not None:  # fill time gaps within entity
-                cohort_table_rep = reindex_gaps(data=cohort_table_rep, missing_index=gaps)
+                cohort_table_rep = reindex_gaps(
+                    data=cohort_table_rep, missing_index=gaps
+                )
 
         cohort_table_rep.reset_index(level=[time_name], drop=False, inplace=True)
-        cohort_table_rep[[i for i in list(cohort_table)]] = cohort_table
+        cohort_table_rep[list(list(cohort_table))] = cohort_table
 
         cohort_table_rep.set_index([time_name], append=True, inplace=True)
         cohort_table_rep.sort_index(inplace=True)
@@ -73,14 +75,15 @@ def get_relative_periods(cohort_table: DataFrame):
     return np.array(cohort_table.index.get_level_values(1))[:, None] - cohort_table
 
 
-def get_relative_periods_dummies(cohort_table: DataFrame,
-                                 intensity_table: DataFrame = None,
-                                 start: int = None,
-                                 end: int = None,
-                                 ) -> tuple[DataFrame, int, int]:
+def get_relative_periods_dummies(
+    cohort_table: DataFrame,
+    intensity_table: DataFrame = None,
+    start: int = None,
+    end: int = None,
+) -> tuple[DataFrame, int, int]:
     if start is not None and end is not None:
         if start * end > 0 and abs(start) > abs(end):
-            raise ValueError(f'must be: start <= end')
+            raise ValueError("must be: start <= end")
 
     rp_table = get_relative_periods(cohort_table)
 
@@ -105,10 +108,9 @@ def get_relative_periods_dummies(cohort_table: DataFrame,
             events_cols = pd.get_dummies(rp_table[1])
 
         else:
-            events_cols = (
-                pd.concat([
-                    DataFrame(np.sum(rp_table == t, axis=1), columns=[t])
-                    for t in window], axis=1)
+            events_cols = pd.concat(
+                [DataFrame(np.sum(rp_table == t, axis=1), columns=[t]) for t in window],
+                axis=1,
             )
 
     else:  # if intensity_table
@@ -116,19 +118,25 @@ def get_relative_periods_dummies(cohort_table: DataFrame,
             events_cols = pd.get_dummies(rp_table[1]) * intensity_table[[1]].to_numpy()
 
         else:
-            events_cols = (
-                pd.concat([
-                    DataFrame(np.sum(intensity_table[(rp_table == t)], axis=1), columns=[t])
-                    for t in window], axis=1)
+            events_cols = pd.concat(
+                [
+                    DataFrame(
+                        np.sum(intensity_table[(rp_table == t)], axis=1), columns=[t]
+                    )
+                    for t in window
+                ],
+                axis=1,
             )
 
     return events_cols, first_rp, last_rp
 
 
-def bin_relative_periods_dummies(periods_dummies: DataFrame,
-                                 bin_start: bool = True,
-                                 bin_end: bool = True,
-                                 copy_data: bool = True) -> DataFrame:
+def bin_relative_periods_dummies(
+    periods_dummies: DataFrame,
+    bin_start: bool = True,
+    bin_end: bool = True,
+    copy_data: bool = True,
+) -> DataFrame:
     """bins the relative times at the endpoints. if multiple events it's a sum"""
     if copy_data:
         periods_dummies = periods_dummies.copy()
@@ -140,23 +148,21 @@ def bin_relative_periods_dummies(periods_dummies: DataFrame,
 
     if start == end:
         if bin_start and bin_end:
-            raise ValueError('when start=end, '
-                             'bin endpoints should be either start or end, not both')
+            raise ValueError(
+                "when start=end, "
+                "bin endpoints should be either start or end, not both"
+            )
 
     if bin_start:
         periods_dummies[start] = (
-            periods_dummies
-            .sort_index(ascending=False)
+            periods_dummies.sort_index(ascending=False)
             .groupby(entity_name)[start]
-            .transform('cumsum')
+            .transform("cumsum")
         )
 
     if bin_end:
         periods_dummies[end] = (
-            periods_dummies
-            .sort_index()
-            .groupby(entity_name)[end]
-            .transform('cumsum')
+            periods_dummies.sort_index().groupby(entity_name)[end].transform("cumsum")
         )
 
     if bin_start and not bin_end:
@@ -165,8 +171,8 @@ def bin_relative_periods_dummies(periods_dummies: DataFrame,
     return periods_dummies
 
 
-def reindex_periods(periods_dummies: DataFrame,
-                    reindex_index: MultiIndex) -> DataFrame:
+def reindex_periods(periods_dummies: DataFrame, reindex_index: MultiIndex) -> DataFrame:
     return periods_dummies.reindex(reindex_index, fill_value=0).astype(int)
+
 
 # ----------------------------------------------------------------------
