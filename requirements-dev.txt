@@ -1,6 +1,7 @@
 ipython
 jupyter
 furo
+altair
 sphinx_copybutton
 jupyter
 sphinx
@@ -12,5 +13,3 @@ black[jupyter]==22.6.0
 isort>=5.10
 ruff>=0.0.218
 tox
-wheel
-pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability

@@ -17,21 +17,22 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 include = [
     "LICENSE",
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7,<4.0.0"
+python = ">=3.8,<4.0.0"
 pandas = ">=1.2"
 numpy = ">=1.16"
-scipy = "^1.9.3"
+scipy = ">=1.7.3"
 formulaic = ">=0.3.4,<0.4.0"
-linearmodels = "^4.27"
+linearmodels = ">=4.25"
 statsmodels = ">=0.13,<1.0"
 pyhdfe = "^0.1.2"
-scikit-learn = "^1.1.3"
+scikit-learn = ">=1.0.2"
 plotto = "^0.1.3"
 tqdm = "^4.64.1"
 joblib = "^1.2.0"
