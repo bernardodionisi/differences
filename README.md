@@ -22,7 +22,7 @@ The latest release can be installed using pip
 pip install differences
 ```
 
-currently requires Python 3.9+
+requires Python 3.8+
 
 ## Quick Start
 
