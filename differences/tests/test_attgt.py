@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from differences import ATTgt
-from differences.tests._utility import RATTgtArgs, get_r_did_result, flatten_res, py_test_data
+from differences.tests._utility import (RATTgtArgs, flatten_res,
+                                        get_r_did_result, py_test_data)
 
 
 @pytest.mark.parametrize(
@@ -12,13 +13,19 @@ from differences.tests._utility import RATTgtArgs, get_r_did_result, flatten_res
     RATTgtArgs.varying_args,
 )
 def test_att_gt_agains_r_did(
-        data_name, anticipation, base_period, control_group, est_method, weights_name
+    data_name, anticipation, base_period, control_group, est_method, weights_name
 ) -> None:
     # ------------------------- R --------------------------------------
 
     R_result = get_r_did_result(
         data_name=data_name,
-        params_tuple=(anticipation, base_period, control_group, est_method, weights_name),
+        params_tuple=(
+            anticipation,
+            base_period,
+            control_group,
+            est_method,
+            weights_name,
+        ),
         result_type="att_gt",
     )
     # ------------------------- python ---------------------------------
@@ -57,14 +64,26 @@ def test_att_gt_agains_r_did(
 
         R_agg_res = get_r_did_result(
             data_name=data_name,
-            params_tuple=(anticipation, base_period, control_group, est_method, weights_name),
+            params_tuple=(
+                anticipation,
+                base_period,
+                control_group,
+                est_method,
+                weights_name,
+            ),
             result_type="aggregate",
             agg_type=agg_type,
         )
 
         R_agg_overall_result = get_r_did_result(
             data_name=data_name,
-            params_tuple=(anticipation, base_period, control_group, est_method, weights_name),
+            params_tuple=(
+                anticipation,
+                base_period,
+                control_group,
+                est_method,
+                weights_name,
+            ),
             result_type="overall",
             agg_type=agg_type,
         )

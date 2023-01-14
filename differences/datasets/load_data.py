@@ -83,10 +83,10 @@ def mpdta(py_format: bool = True, seed: int = 4321):
 
 
 def simulated_data(
-        py_format: bool = True,
-        single_event: bool = True,
-        separate_cohort_data: bool = False,
-        seed: int = 4321,
+    py_format: bool = True,
+    single_event: bool = True,
+    separate_cohort_data: bool = False,
+    seed: int = 4321,
 ):
     if single_event:
         data_name = "se"

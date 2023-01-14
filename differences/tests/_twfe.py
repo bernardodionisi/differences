@@ -1,6 +1,9 @@
-from pandas import DataFrame
+from __future__ import annotations
+
 from altair import HConcatChart
-from differences import simulate_data, TWFE
+from pandas import DataFrame
+
+from differences import TWFE, simulate_data
 
 panel_data = simulate_data(nentity=20)  # generate data
 
