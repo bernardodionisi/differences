@@ -1,6 +1,6 @@
 pandas>=1.2
 numpy>=1.16
-scipy>=1.7.3
+scipy>=1.8
 formulaic>=0.3.4,<0.4.0
 linearmodels>=4.25
 statsmodels>=0.13,<1.0

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "differences"
-version = "0.1.1"
+version = "0.1.2"
 description = "difference-in-differences estimation and inference in Python"
 authors = ["Bernardo Dionisi <bernardo.dionisi@gmail.com>"]
 readme = "README.md"
@@ -27,7 +27,7 @@ include = [
 python = ">=3.8,<4.0.0"
 pandas = ">=1.2"
 numpy = ">=1.16"
-scipy = ">=1.7.3"
+scipy = ">=1.8"
 formulaic = ">=0.3.4,<0.4.0"
 linearmodels = ">=4.25"
 statsmodels = ">=0.13,<1.0"
