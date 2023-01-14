@@ -646,6 +646,7 @@ class ATTgt:
 
         # ---------- select function to compute the ATT and if ---------
 
+        self.est_method = est_method
         if isinstance(est_method, str):
             est_method, est_method_pscore = preprocess_est_method(est_method=est_method)
 
@@ -1096,6 +1097,7 @@ class ATTgt:
     def estimation_details(self, type_of_aggregation: str = None):
 
         details = {
+            "estimation_method": self.est_method,
             "anticipation": self.anticipation,
             "base_period_type": self.base_period_type,
             "is_panel": self.is_panel,
