@@ -31,7 +31,7 @@ requires Python >= 3.8
 the ATTgt class implements the estimation procedures suggested by [Callaway and Sant'Anna (2021)
 ](https://www.sciencedirect.com/science/article/abs/pii/S0304407620303948), [Sant'Anna and Zhao 
 (2020)](https://www.sciencedirect.com/science/article/abs/pii/S0304407620301901) and the 
-multi-valued treatement case discussed in [Callaway, Goodman-Bacon & Sant'Anna (2021)](https://arxiv.org/abs/2107.02637)
+multi-valued treatment case discussed in [Callaway, Goodman-Bacon & Sant'Anna (2021)](https://arxiv.org/abs/2107.02637)
 
 ```python
 from differences import ATTgt, simulate_data
@@ -47,6 +47,8 @@ att_gt.aggregate('event')
 
 *differences* ATTgt benefitted substantially from the original authors' R packages: Callaway & Sant'Anna's [did](https://github.com/bcallaway11/did) and Sant'Anna and 
 Zhao's [DRDID](https://github.com/pedrohcgs/DRDID)
+
+> **_NOTE:_**  Important note on permormance ! Currently, the ATTgt class allows users to pass string entity identifiers, as in the example with `df = simulate_data()` above, where the first index containing the entity identifiers is a string datatype. Note that the performance of the ATT computation (when calling `.fit()`) would improve greatly if you cast the entities to integers before initializing ATTgt. You can easily do that just by using pandas category codes.
 
 ### TWFE
 
