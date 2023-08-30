@@ -57,7 +57,7 @@ from differences import TWFE, simulate_data
 
 df = simulate_data()
 
-att_gt = TWFE(data=df, cohort_name='cohort')
+twfe = TWFE(data=df, cohort_name='cohort')
 
-att_gt.fit(formula='y')
+twfe.fit(formula='y')
 ```
