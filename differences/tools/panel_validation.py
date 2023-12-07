@@ -135,7 +135,9 @@ class _ValiDIData:
             # for each entity-event_date,
             # create the start (amin) and end (amax) of the panel for the corresponding entity
             cohort_data = cohort_data[cohort_info_list].join(
-                data.groupby(entity_name)[time_name].agg([np.min, np.max])
+                data.groupby(entity_name)[time_name].agg(["min", "max"]).rename(columns={
+                    "min": "amin", "max": "amax"
+                })
             )
 
             # ----------- pre-process cohorts / data -------------------
