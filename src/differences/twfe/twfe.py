@@ -10,9 +10,7 @@ from ..tools.panel_validation import _ValiDIData
 from ..tools.relative_periods import (bin_relative_periods_dummies,
                                       cohort_info_table,
                                       get_relative_periods_dummies)
-from ..tools.utility import (EventStudyResult, bin_start_end,
-                             capitalize_details, process_formula)
-from .plot import plot_event_study
+from ..tools.utility import (EventStudyResult, bin_start_end, process_formula)
 from .utility import add_stack_fe, stack_did_data
 
 
@@ -58,13 +56,13 @@ class TWFE:
     data = _ValiDIData()
 
     def __init__(
-        self,
-        data: DataFrame,
-        cohort_name: str,
-        cohort_data: DataFrame = None,
-        intensity_name: str = None,
-        freq: str = None,  # frequency if cohort is datetime
-        stacked: bool = False,
+            self,
+            data: DataFrame,
+            cohort_name: str,
+            cohort_data: DataFrame = None,
+            intensity_name: str = None,
+            freq: str = None,  # frequency if cohort is datetime
+            stacked: bool = False,
     ):
 
         self.cohort_name = cohort_name
@@ -95,14 +93,14 @@ class TWFE:
 
     @lru_cache(maxsize=2)
     def _get_relative_periods(
-        self,
-        start: int = None,
-        end: int = None,
-        intensity: bool = False,
-        bin_start: bool = True,
-        bin_end: bool = True,
-        reference_period: int = None,
-        _reindex: bool = True,
+            self,
+            start: int = None,
+            end: int = None,
+            intensity: bool = False,
+            bin_start: bool = True,
+            bin_end: bool = True,
+            reference_period: int = None,
+            _reindex: bool = True,
     ):
 
         cohort_table = cohort_info_table(
@@ -136,8 +134,8 @@ class TWFE:
         )
 
         if (
-            (isinstance(start, int) and start != first_rp)
-            or (isinstance(end, int) and end != last_rp)
+                (isinstance(start, int) and start != first_rp)
+                or (isinstance(end, int) and end != last_rp)
         ) and (bin_start or bin_end):
 
             self._binned_relative_periods = bin_relative_periods_dummies(
@@ -195,20 +193,20 @@ class TWFE:
         return self._relative_periods
 
     def fit(
-        self,
-        formula: str,
-        start: int = None,
-        end: int = None,
-        reference_period: int | None = -1,
-        bin_endpoints: bool | str = True,
-        weights_name: str = None,
-        cluster_names: str | list = None,
-        alpha: float = 0.05,
-        use_intensity: bool = False,
-        drop_singletons: bool = True,
-        drop_absorbed: bool = False,
-        dummies_names: list[str] = None,
-        drop_names: list[str] = None,
+            self,
+            formula: str,
+            start: int = None,
+            end: int = None,
+            reference_period: int | None = -1,
+            bin_endpoints: bool | str = True,
+            weights_name: str = None,
+            cluster_names: str | list = None,
+            alpha: float = 0.05,
+            use_intensity: bool = False,
+            drop_singletons: bool = True,
+            drop_absorbed: bool = False,
+            dummies_names: list[str] = None,
+            drop_names: list[str] = None,
     ):
         """
         fit two-way fixed effect
@@ -350,12 +348,3 @@ class TWFE:
             )
 
         return details
-
-    def plot(self, **plotting_parameters):
-        estimation_details = capitalize_details(self.estimation_details)
-
-        return plot_event_study(
-            df=self._result.event_study_est,
-            plotting_parameters=plotting_parameters,
-            estimation_details=estimation_details,
-        )
