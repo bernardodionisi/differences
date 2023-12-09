@@ -7,6 +7,7 @@ import pandas as pd
 from pandas import DataFrame
 from pandas.api.types import (is_datetime64_dtype, is_integer_dtype,
                               is_numeric_dtype)
+from pandas.core.dtypes.common import is_string_dtype
 
 from ..tools.panel_utility import is_panel_balanced, map_dt_series_to_int
 
@@ -35,6 +36,9 @@ class _ValiDIData:
 
         # operations on data will mostly be inplace given the class is
         # providing an option copy_data
+
+        # convert entities to integer if they are strings
+        data = replace_string_index_with_category_code(data)
 
         # -------------- make some columns names reserved --------------
 
@@ -117,7 +121,7 @@ class _ValiDIData:
 
             # if there are no nas and there is a cohort of 0 but no 0 times
             if not cohort_data_has_nas and (
-                min(data[time_name]) != min(cohort_data[cohort_name]) == 0
+                    min(data[time_name]) != min(cohort_data[cohort_name]) == 0
             ):
                 raise ValueError(
                     f"{cohort_name} should not contain 0s for never treated groups, "
@@ -324,10 +328,10 @@ def is_single_event(data: DataFrame, event_dummy_name: str):
 
 
 def pre_process_treated_before(
-    cohort_data: DataFrame,
-    cohort_name: str,
-    data: DataFrame,
-    copy_data: bool = True,  # just to issue a warning
+        cohort_data: DataFrame,
+        cohort_name: str,
+        data: DataFrame,
+        copy_data: bool = True,  # just to issue a warning
 ):
     """drops always treated entities"""
 
@@ -355,7 +359,7 @@ def pre_process_treated_before(
 
 
 def pre_process_treated_after(
-    cohort_data: DataFrame, cohort_name: str, anticipation: int = 0
+        cohort_data: DataFrame, cohort_name: str, anticipation: int = 0
 ):
     """drops event dates that come after the end of the panel (for the entity)"""
 
@@ -382,12 +386,12 @@ def pre_process_treated_after(
 
 
 def pre_process_no_never_treated(
-    cohort_data: DataFrame,
-    cohort_name: str,
-    data: DataFrame,
-    time_name: str,
-    anticipation: int,
-    copy_data: bool = True,  # just to raise a warning
+        cohort_data: DataFrame,
+        cohort_name: str,
+        data: DataFrame,
+        time_name: str,
+        anticipation: int,
+        copy_data: bool = True,  # just to raise a warning
 ):
     """makes the last cohort the comparison group, if no never treated"""
 
@@ -421,7 +425,7 @@ def pre_process_no_never_treated(
 
 
 def preprocess_cohort_data(
-    data: DataFrame, cohort_data: DataFrame, cohort_name: str, intensity_name: str
+        data: DataFrame, cohort_data: DataFrame, cohort_name: str, intensity_name: str
 ):
     """generate valid cohort_data
 
@@ -460,3 +464,20 @@ def preprocess_cohort_data(
         cohort_data.set_index([entity_name], inplace=True)
 
     return cohort_data
+
+
+def replace_string_index_with_category_code(data: pd.DataFrame):
+    # print("converting to integer")
+
+    entity_name, time_name = data.index.names
+
+    if is_string_dtype(data.index.get_level_values(0)):
+        # convert the first index level to category
+        new_index = data.index.get_level_values(0).astype('category')
+
+        # use the category codes as the new index, keep the second level as-is
+        data.index = pd.MultiIndex.from_arrays([
+            new_index.codes,
+            data.index.get_level_values(1)
+        ], names=[entity_name, time_name])
+    return data

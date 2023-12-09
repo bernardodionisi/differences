@@ -4,7 +4,7 @@ panel_data = simulate_data()  # generate data
 
 att_gt = ATTgt(data=panel_data, cohort_name='cohort')
 
-att_gt.fit(formula='y ~ x0')
+att_gt.fit(formula='y ~ x0', n_jobs=-1)
 
 att_gt.aggregate('time')
 
