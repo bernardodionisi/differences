@@ -10,10 +10,10 @@ from ..tools.panel_utility import panel_has_gaps, reindex_gaps
 
 
 def cohort_info_table(
-    cohort_data: DataFrame,
-    pivot_values: str,
-    data_index: Optional[Union[MultiIndex, Index]] = None,
-    fill_gaps: bool = True,
+        cohort_data: DataFrame,
+        pivot_values: str,
+        data_index: Optional[Union[MultiIndex, Index]] = None,
+        fill_gaps: bool = True,
 ) -> DataFrame:
     """
     pivots cohort_data
@@ -76,10 +76,10 @@ def get_relative_periods(cohort_table: DataFrame):
 
 
 def get_relative_periods_dummies(
-    cohort_table: DataFrame,
-    intensity_table: DataFrame = None,
-    start: int = None,
-    end: int = None,
+        cohort_table: DataFrame,
+        intensity_table: DataFrame = None,
+        start: int = None,
+        end: int = None,
 ) -> tuple[DataFrame, int, int]:
     if start is not None and end is not None:
         if start * end > 0 and abs(start) > abs(end):
@@ -132,10 +132,10 @@ def get_relative_periods_dummies(
 
 
 def bin_relative_periods_dummies(
-    periods_dummies: DataFrame,
-    bin_start: bool = True,
-    bin_end: bool = True,
-    copy_data: bool = True,
+        periods_dummies: DataFrame,
+        bin_start: bool = True,
+        bin_end: bool = True,
+        copy_data: bool = True,
 ) -> DataFrame:
     """bins the relative times at the endpoints. if multiple events it's a sum"""
     if copy_data:
@@ -173,6 +173,5 @@ def bin_relative_periods_dummies(
 
 def reindex_periods(periods_dummies: DataFrame, reindex_index: MultiIndex) -> DataFrame:
     return periods_dummies.reindex(reindex_index, fill_value=0).astype(int)
-
 
 # ----------------------------------------------------------------------
