@@ -45,19 +45,6 @@ att_gt.fit(formula='y')
 att_gt.aggregate('event')
 ```
 
-*differences* ATTgt benefitted substantially from the original authors' R packages: Callaway & Sant'Anna's [did](https://github.com/bcallaway11/did) and Sant'Anna and 
-Zhao's [DRDID](https://github.com/pedrohcgs/DRDID)
-
-> **_NOTE:_**  Important note on performance ! Currently, the ATTgt class allows users to pass string entity identifiers, as in the example with `df = simulate_data()` above, where the first index containing the entity identifiers is a string datatype. Note that the performance of the ATT computation (when calling `.fit()`) would improve greatly if you cast the entities to integers before initializing ATTgt. You can easily do that just by using pandas category codes.
-
-### TWFE
-
-```python
-from differences import TWFE, simulate_data
-
-df = simulate_data()
-
-twfe = TWFE(data=df, cohort_name='cohort')
-
-twfe.fit(formula='y')
-```
+*differences* ATTgt benefited from
+    - Callaway & Sant'Anna's [did](https://github.com/bcallaway11/did)
+    - Sant'Anna and Zhao's [DRDID](https://github.com/pedrohcgs/DRDID)
