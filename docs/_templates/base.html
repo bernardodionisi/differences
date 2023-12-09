@@ -1,0 +1,17 @@
+{% extends "!base.html" %}
+
+{% block announce %}
+<p>
+    If you like the package, spread the word and give us a
+    <span class="md-icon si-icon-inline octicons_star-16"></span>
+    on
+    <a class="reference external" href="https://github.com/bernardodionisi/differences">GitHub</a>!
+</p>
+{% endblock %}
+
+{% block outdated %}
+You're not viewing the latest version.
+<a href="{{ '../' ~ base_url}}">
+    <strong>Click here to go to latest.</strong>
+</a>
+{% endblock %}

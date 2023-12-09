@@ -1,0 +1,162 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - 'release/*'
+  pull_request:
+    branches:
+      - main
+      - 'release/*'
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The version's tag of the docs to build
+        required: true
+        type: string
+env:
+  WORKFLOW_DISPATCH_TAG: ${{ github.event.inputs.tag }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
+          # NOTE: Fake ternary operator, see https://github.com/actions/runner/issues/409
+          fetch-depth: 0  # Fetch all commits and tags, needed for intermediate versions
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Upgrade pip
+        run: python3 -m pip install --upgrade pip
+
+      - name: Install the documentation dependencies
+        run: python3 -m pip install -r docs/requirements.txt
+
+      - name: Install the `differences` package
+        run: python3 -m pip install .
+
+      - name: Run Sphinx to build docs
+        run: sphinx-build -b dirhtml -v docs/ docs/build/
+
+      # Tarring is needed because upload-artifact does not preserve case sensitivity
+      - name: Tar files
+        run: tar -czvf docs.tar.gz -C docs/build/ .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: docs.tar.gz
+          retention-days: 30
+
+  publish:
+    name: Publish
+    needs: build
+    # Only publish new docs to GitHub pages if on a pre-release branch or tagged released version
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch'}}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: gh-pages
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: docs
+
+      - name: Determine folder name
+        id: folder
+        shell: python
+        run: |
+          import os
+          import re
+
+          github_ref = os.environ.get('GITHUB_REF')
+          print("github_ref:", github_ref)
+
+          github_event_name = os.environ.get("GITHUB_EVENT_NAME")
+          print("github_event_name:", github_event_name)
+
+          workflow_dispatch_tag = os.environ.get("WORKFLOW_DISPATCH_TAG")
+          print("workflow_dispatch_tag:", workflow_dispatch_tag)
+
+          if github_event_name == "push" and github_ref.startswith("refs/heads/release/"):
+              name = "v" + github_ref.split("refs/heads/release/")[1]
+              print("name 1:", name)
+          elif github_event_name == "push" and github_ref.startswith("refs/tags/"):
+              name = github_ref.split("refs/tags/")[1]
+              print("name 2:", name)
+          elif github_event_name == "workflow_dispatch":
+              name = workflow_dispatch_tag
+              print("name 3:", name)
+          else:
+              print("name 4:")
+              raise RuntimeError
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"name={name}")
+
+      - name: Clear old version folder
+        run: |
+          rm -rf ${{ steps.folder.outputs.name }}
+          mkdir ${{ steps.folder.outputs.name }}
+
+      # Un-tarring is needed because upload-artifact does not preserve case sensitivity
+      - name: Untar files
+        run: tar -xzvf docs.tar.gz -C ${{ steps.folder.outputs.name }}
+
+      - name: Remove artifacts
+        run: rm docs.tar.gz
+
+      - name: Update versions.json file
+        shell: python
+        run: |
+          import json
+          import pathlib
+          import os
+
+          # Determine the version folders
+          cwd = pathlib.Path.cwd()
+          versions = sorted((item.name for item in cwd.iterdir() if item.is_dir() and not item.name.startswith(".")), reverse=True)
+          print(versions)
+
+          # Remove "latest" from list of versions
+          try:
+            versions.remove("latest")
+            print("Removed latest")
+          except:
+            pass
+            
+          os.system("rm latest")
+
+          list_of_dicts = []
+          latest = None
+          for version in versions:
+            title = version
+            aliases = []
+            if "x" in version:
+              title += " (pre-release)"
+            elif latest is None:
+              latest = version
+              aliases = ["latest"]
+              os.system(f"ln -s {version} latest")
+            list_of_dicts.append({"version": version, "title": title, "aliases": aliases})
+          print(list_of_dicts)
+
+          with (cwd / "versions.json").open("w") as f:
+              json.dump(list_of_dicts, f, indent=4)
+
+      - run: git status
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Deploy ${{ github.sha }}

@@ -1,15 +1,7 @@
-ipython
-jupyter
-furo
-altair
-sphinx_copybutton
-jupyter
-sphinx
-nbsphinx
-pytest>=7.0,<7.1
+ruff == 0.1.4
+pytest
+pytest-cov[toml]
 pytest-xdist
-pytest-cov
-black[jupyter]==22.6.0
-isort>=5.10
-ruff>=0.0.218
-tox
+pytest-benchmark >= 4.0.0
+requests
+pdfminer.six

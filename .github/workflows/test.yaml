@@ -1,0 +1,178 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/*'
+  pull_request:
+    branches:
+      - main
+      - 'release/*'
+
+jobs:
+  wait-on-wheel:
+    name: Wait for wheel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait on build.yaml to build the wheel
+        uses: lewagon/wait-on-check-action@v1.0.0
+        with:
+          # When triggered on a pull request, github.sha is a temporary merge commit for the PR. The wait
+          # action must wait on the SHA of the commit that triggered the workflow, which is the HEAD of the
+          # PR branch. https://github.com/lewagon/wait-on-check-action/issues/25#issuecomment-784773361
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          # NOTE: Fake ternary operator, see https://github.com/actions/runner/issues/409
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          check-name: 'Wheel'
+          allowed-conclusions: success
+          wait-interval: 10
+
+  test-coverage:
+    name: Coverage
+    needs: wait-on-wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Upgrade pip
+        run: python3 -m pip install --upgrade pip
+
+      - name: Download wheel artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yaml
+          workflow_conclusion: success
+          commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          # NOTE: Fake ternary operator, see https://github.com/actions/runner/issues/409
+
+      # This is needed because Windows terminal cannot expand `pip install pydrad-*.whl`
+      - name: Get wheel file name
+        uses: tj-actions/glob@v15
+        id: glob
+        with:
+          files: pydrad-*.whl
+          working-directory: dist/
+
+      - name: Install the dev dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+
+      - name: Install the `pydrad` package wheel with upgraded dependencies
+        run: python3 -m pip install --upgrade dist/${{ steps.glob.outputs.paths }}
+
+      - name: Test with pytest
+        run: python3 -m pytest -n auto --cov=pydrad --cov-report=xml tests/
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: false
+          verbose: true
+
+  test-min:
+    name: Min
+    needs: wait-on-wheel
+    if: ${{ github.event_name == 'pull_request' }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ 3.9, '3.10', 3.11 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: python3 -m pip install --upgrade pip
+
+      - name: Download wheel artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yaml
+          workflow_conclusion: success
+          commit: ${{github.event.pull_request.head.sha}}
+
+      # This is needed because Windows terminal cannot expand `pip install pydrad-*.whl`
+      - name: Get wheel file name
+        uses: tj-actions/glob@v15
+        id: glob
+        with:
+          files: pydrad-*.whl
+          working-directory: dist/
+
+      - name: Install minimum package dependencies
+        run: python3 -m pip install -r requirements-min.txt
+
+      - name: Install the dev dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+
+      - name: Install the `pydrad` package wheel
+        run: python3 -m pip install dist/${{ steps.glob.outputs.paths }}
+
+      - name: Test with pytest
+        run: python3 -m pytest -n auto tests/
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: false
+          verbose: true
+
+  test-latest:
+    name: Latest
+    needs: wait-on-wheel
+    if: ${{ github.event_name == 'pull_request' }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ 3.9, '3.10', 3.11 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: python3 -m pip install --upgrade pip
+
+      - name: Download wheel artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yaml
+          workflow_conclusion: success
+          commit: ${{github.event.pull_request.head.sha}}
+
+      # This is needed because Windows terminal cannot expand `pip install pydrad-*.whl`
+      - name: Get wheel file name
+        uses: tj-actions/glob@v15
+        id: glob
+        with:
+          files: pydrad-*.whl
+          working-directory: dist/
+
+      - name: Install the dev dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+
+      - name: Install the `pydrad` package wheel with upgraded dependencies
+        run: python3 -m pip install --upgrade dist/${{ steps.glob.outputs.paths }}
+
+      - name: Test with pytest
+        run: python3 -m pytest -n auto tests/
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: false
+          verbose: true

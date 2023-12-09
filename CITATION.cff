@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Dionisi"
+  given-names: "Bernardo"
+title: "differences: difference-in-differences estimation in Python"
+date-released: 2022-11-01
+url: "https://github.com/bernardodionisi/differences"

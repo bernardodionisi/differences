@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools >= 62", "wheel", "setuptools_scm[toml] >= 6.2"]
+
+[project]
+name = "differences"
+authors = [{ name = "Bernardo Dionisi", email = "bernardo.dionisi@gmail.com" }]
+description = "difference-in-differences estimation and inference in Python"
+readme = "README.md"
+license = { text = "GPLv3" }
+keywords = [
+    "did",
+    "difference-in-differences",
+    "panel data",
+    "econometrics",
+    "causal inference"
+]
+
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.16",
+    "scipy>=1.8",
+    "pandas>=1.2",
+    "linearmodels>=4.25",
+    "statsmodels>=0.13,<1.0",
+    "formulaic>=0.3.4,<0.4.0",
+    "pyhdfe>=0.1.2",
+    "tqdm>=4.64.1",
+    "joblib>=1.2.0",
+    "plotto==0.1.3",
+    "typing_extensions >= 4.0.0",
+]
+dynamic = ["version"]
+
+#[project.optional-dependencies]
+
+
+[project.urls]
+Homepage = "https://github.com/bernardodionisi/differences"
+Source = "https://github.com/bernardodionisi/differences"
+Issues = "https://github.com/bernardodionisi/differences/issues"
+Documentation = "https://bernardodionisi.github.io/differences/latest/"
+
+[tool.setuptools_scm]
+write_to = "src/differences/_version.py"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"differences.datasets.data" = ["*.csv", "*.parquet", "datasets/*.csv", "datasets/*.parquet"]
+
+[tool.distutils.bdist_wheel]
+universal = false
+
+[tool.ruff]
+src = ["src"]
+extend-include = ["*.ipynb"]
+extend-exclude = ["build", "dist", "docs", "src/differences/_version.py"]
+line-length = 99
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    # "SIM",# flake8-simplify
+    "I", # isort
+]
+ignore = ["E501", "E713", "E714", "E741"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
+
+[tool.pytest.ini_options]
+minversion = "6.2"
+addopts = "-s --showlocals"
+testpaths = ["tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "@overload",
+    "if TYPE_CHECKING:",
+    "pragma: no cover",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "raise RuntimeError",
+]

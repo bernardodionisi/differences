@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/*'
+  pull_request:
+    branches:
+      - main
+      - 'release/*'
+  workflow_call:
+
+jobs:
+  build-wheel:
+    name: Wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all commits and tags, needed for intermediate versions
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Upgrade pip and other packaging tools
+        run: python3 -m pip install --upgrade pip setuptools setuptools_scm wheel build twine
+
+      - name: Show package version
+        run: python3 -m setuptools_scm
+
+      - name: Build the `pydrad` package
+        run: python3 -m build
+
+      - name: Verify the wheel file
+        run: python3 -m twine check dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/
+          retention-days: 30

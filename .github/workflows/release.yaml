@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+    name: Build the package
+    uses: ./.github/workflows/build.yaml
+
+  docs:
+    name: Build the docs
+    uses: ./.github/workflows/docs.yaml
+
+  release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all commits and tags
+          ref: ${{ github.ref }}
+
+      - name: Get current version
+        id: current
+        run: |
+          version=$(git tag --sort=-version:refname | head -n 1)
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      - name: Get previous version
+        id: previous
+        run: |
+          version=$(git tag --sort=-version:refname | head -n 2 | tail -1)
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      - name: Construct release notes
+        run: |
+          # cp docs/release-notes/${{ steps.current.outputs.version }}.md release_notes.md
+          echo -e "\n## Commits\n" > release_notes.md
+          git log --oneline ${{ steps.previous.outputs.version }}..${{ steps.current.outputs.version }} >> release_notes.md
+
+      - name: Create GitHub release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.current.outputs.version }}
+          release_name: differences ${{ steps.current.outputs.version }}
+          body_path: release_notes.md
+          draft: true
+
+  publish:
+    name: Publish on PyPI
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+          packages_dir: dist/
+          verbose: true
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: dist/
+          verbose: true
