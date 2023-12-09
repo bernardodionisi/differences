@@ -27,11 +27,11 @@ def group_random(ser: Series, low=0.0, high=1.0, random_func=np.random.uniform):
 
 
 def data_generating_process(
-    relative_times,
-    tau: float = 1,
-    alpha: float = 0,
-    positive_effect: bool = True,
-    bound_effect: bool = True,
+        relative_times,
+        tau: float = 1,
+        alpha: float = 0,
+        positive_effect: bool = True,
+        bound_effect: bool = True,
 ):
     """data_generating_process(np.arange(-5, 5))"""
 
@@ -63,11 +63,11 @@ def data_generating_process(
 
 
 def single_event_per_entity(
-    entities: list,
-    times: list,
-    share_treated: float,
-    n_cohorts: int,
-    cohort_shares: float | list[float] = None,
+        entities: list,
+        times: list,
+        share_treated: float,
+        n_cohorts: int,
+        cohort_shares: float | list[float] = None,
 ) -> DataFrame:
     """creates the cohort_data: a dataframe with cohort dates for each datafreme
 
@@ -113,12 +113,12 @@ def single_event_per_entity(
 
 
 def event_intensities(
-    cohort_data: DataFrame,
-    intensity_by: str | int | tuple = None,
-    low: float | int = 0,
-    high: float | int = 2,
-    random_func=np.random.uniform,
-    samples: int = 0,
+        cohort_data: DataFrame,
+        intensity_by: str | int | tuple = None,
+        low: float | int = 0,
+        high: float | int = 2,
+        random_func=np.random.uniform,
+        samples: int = 0,
 ):
     """create the event intensity col in cohort_data"""
 
@@ -172,7 +172,7 @@ def event_intensities(
 
 
 def event_intensities_old(
-    cohort_data: DataFrame, intensity_by: str | int | tuple = None
+        cohort_data: DataFrame, intensity_by: str | int | tuple = None
 ):
     """create the event intensity col in cohort_data"""
 
@@ -268,22 +268,22 @@ def make_datetime(data):
 
 class SimulateData:
     def __init__(
-        self,
-        nentity: int = 971,
-        ntime: int = 7,
-        nexog: int = 2,
-        const: bool = False,
-        missing: float = 0,
-        other_effects: int = 2,
-        ncats: int | list[int] = 4,
-        share_treated: float = 0.6,
-        n_cohorts: int = 3,
-        cohort_shares: int | list[float] = None,
-        intensity_by: str | int | tuple[str, int] = None,
-        low=0,
-        high=1,
-        random_func=np.random.uniform,
-        samples: int = 0,
+            self,
+            nentity: int = 971,
+            ntime: int = 7,
+            nexog: int = 2,
+            const: bool = False,
+            missing: float = 0,
+            other_effects: int = 2,
+            ncats: int | list[int] = 4,
+            share_treated: float = 0.6,
+            n_cohorts: int = 3,
+            cohort_shares: int | list[float] = None,
+            intensity_by: str | int | tuple[str, int] = None,
+            low=0,
+            high=1,
+            random_func=np.random.uniform,
+            samples: int = 0,
     ):
 
         self.nentity = nentity
@@ -394,12 +394,12 @@ class SimulateData:
 
     @lru_cache(maxsize=1)
     def dgp(
-        self,
-        effect_size: float = 1,
-        tau: float = 1,
-        alpha: float = 0,
-        positive_effect: bool = True,
-        bound_effect: bool = True,
+            self,
+            effect_size: float = 1,
+            tau: float = 1,
+            alpha: float = 0,
+            positive_effect: bool = True,
+            bound_effect: bool = True,
     ):
 
         dgp = data_generating_process(
@@ -425,9 +425,9 @@ class SimulateData:
         self.panel_data["effect"] = effect
 
         self.panel_data["y"] = (
-            self.panel_data["y"]
-            + self.panel_data["effect"]
-            + np.random.normal(0, effect_size / 1, size=len(self.panel_data))
+                self.panel_data["y"]
+                + self.panel_data["effect"]
+                + np.random.normal(0, effect_size / 1, size=len(self.panel_data))
         )
 
         self._add_info_to_panel()
@@ -437,28 +437,28 @@ class SimulateData:
 
 
 def simulate_data(
-    nentity: int = 1000,
-    ntime: int = 8,
-    nexog: int = 1,
-    const: bool = False,
-    missing: float = 0,
-    other_effects: int = 2,
-    ncats: int | list[int] = 1,
-    share_treated: float = 0.8,
-    n_cohorts: int = 3,
-    cohort_shares: int | list[float] = None,
-    effect_size: float = 10,
-    tau: float = 10,
-    alpha: float = 0,
-    positive_effect: bool = True,
-    bound_effect: bool = False,
-    unbalance: bool = False,
-    intensity_by: str | int | tuple[str, int] = "cohort",
-    low: float | int = 0.5,
-    high: float | int = 10,
-    random_func=None,
-    samples: int = 0,
-    datetime: bool = False,
+        nentity: int = 1000,
+        ntime: int = 8,
+        nexog: int = 1,
+        const: bool = False,
+        missing: float = 0,
+        other_effects: int = 2,
+        ncats: int | list[int] = 1,
+        share_treated: float = 0.8,
+        n_cohorts: int = 3,
+        cohort_shares: int | list[float] = None,
+        effect_size: float = 10,
+        tau: float = 10,
+        alpha: float = 0,
+        positive_effect: bool = True,
+        bound_effect: bool = False,
+        unbalance: bool = False,
+        intensity_by: str | int | tuple[str, int] = "cohort",
+        low: float | int = 0.5,
+        high: float | int = 10,
+        random_func=None,
+        samples: int = 0,
+        datetime: bool = False,
 ):
     sim_data = SimulateData(
         nentity=nentity,
