@@ -1,4 +1,4 @@
-<img src="./doc/source/images/logo/bw/logo_name_bw.png" alt="drawing" width="200"
+<img src="./docs/logo/bw/logo_name_bw.png" alt="drawing" width="200"
 style="display: block;margin-left: auto;margin-right: auto;width: 80%;"/>
 
 difference-in-differences estimation and inference for Python
