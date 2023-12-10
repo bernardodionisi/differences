@@ -60,7 +60,8 @@ extensions = [
     "sphinx_design",
     "IPython.sphinxext.ipython_console_highlighting",
     "IPython.sphinxext.ipython_directive",
-    # "ipython_with_reprs",
+    "ipython_with_reprs",
+
 ]
 
 # # --- exclude In [x]: and Out[x]: when copying ---
@@ -114,6 +115,8 @@ rst_prolog = """
 .. role:: python(code)
    :language: python
    :class: highlight
+
+.. role:: underline
 """
 
 # Sets the default role of `content` to :python:`content`, which uses the custom Python syntax highlighting inline literal

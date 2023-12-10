@@ -1,26 +1,51 @@
+/* Set the background color for the light theme */
+[data-md-color-scheme="default"] {
+    --md-default-bg-color: #ECE7E3;
+}
+
+[data-md-color-scheme="default"] .md-banner {
+    background-color: #617378; /* Replace with your desired color */
+}
+
+[data-md-color-scheme="slate"] .md-banner {
+    background-color: #617378; /* Replace with your desired color */
+}
+
 /* Set the colors for the light theme */
 [data-md-color-scheme="default"] {
-    --md-primary-fg-color: #EA7470;
-    --md-accent-fg-color: #EA7470;
+    --md-primary-fg-color: #3D555D;
+    --md-accent-fg-color: #3D555D;
 }
 
 /* @media screen and (max-width: 76.1875em) */
 [data-md-color-scheme="default"] .md-nav--primary .md-nav__title[for=__drawer] {
-    background-color: #EA7470;
+    background-color: #3D555D;
 }
 
-[data-md-color-scheme="default"] .md-source {
-    background-color: #EA7470;
+[data-md-color-scheme="default"] .md-nav .md-source {
+    background-color: #617378;
 }
+
+/* the borders of github icon */
+[data-md-color-scheme="default"] .md-nav .md-nav__source {
+    background-color: #617378;
+}
+
 
 [data-md-color-scheme="default"] .md-header {
-    background-color: #EA7470;
+    background-color: #3D555D;
 }
 
 [data-md-color-scheme="default"] .md-tabs {
-    background-color: #EA7470;
+    background-color: #3D555D;
 }
 
+
+/* Set the colors for the dark theme */
+[data-md-color-scheme="default"] {
+    --md-primary-fg-color: #F7A306;
+    --md-accent-fg-color: #F7A306;
+}
 
 /* Set the colors for the dark theme */
 [data-md-color-scheme="slate"] {
@@ -28,22 +53,28 @@
     --md-accent-fg-color: #EEBA44;
 }
 
+[data-md-color-scheme="slate"] .md-nav .md-source {
+    background-color: #617378;
+}
+
+/* the borders of github icon */
+[data-md-color-scheme="slate"] .md-nav .md-nav__source {
+    background-color: #617378;
+}
+
 [data-md-color-scheme="slate"] .md-header {
-    background-color: #344FA1;
+    background-color: #3D555D;
 }
 
 [data-md-color-scheme="slate"] .md-tabs {
-    background-color: #344FA1;
+    background-color: #3D555D;
 }
 
 /* @media screen and (max-width: 76.1875em) */
 [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for=__drawer] {
-    background-color: #344FA1;
+    background-color: #3D555D;
 }
 
-[data-md-color-scheme="slate"] .md-source {
-    background-color: #344FA1;
-}
 
 /* Fix line numbers in code blocks */
 .linenos {
@@ -69,4 +100,8 @@
 .md-banner {
     background-color: var(--md-typeset-mark-color);
     color: var(--md-default-fg-color);
+}
+
+.underline {
+  text-decoration: underline;
 }

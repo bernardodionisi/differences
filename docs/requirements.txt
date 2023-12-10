@@ -1,5 +1,5 @@
 sphinx
-sphinx-immaterial == 0.11.7
+sphinx-immaterial
 sphinx-design
 sphinx-last-updated-by-git
 sphinx-math-dollar

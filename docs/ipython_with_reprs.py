@@ -12,9 +12,9 @@ import sphinx.util.logging
 logger = sphinx.util.logging.getLogger(__name__)
 
 ELEMENT_REPR_TO_TITLE = {
-    "str": "string",
-    "int": "integer",
-    "float": "float",
+    "reg": "Outcome Regression",
+    "dr": "Doubly Robust",
+    "std_ipw-mle": "IPW",
 }
 
 
@@ -32,7 +32,7 @@ class IPythonWithReprsDirective(sphinx.util.docutils.SphinxDirective):
         # Parse input parameters
         element_reprs = self.arguments[0].split(",")
         titles = [ELEMENT_REPR_TO_TITLE[element_repr] for element_repr in element_reprs]
-        field = self.options.get("name", "GF")
+        field = self.options.get("name", "ATTgt")
 
         ws = "    "
         new_lines = [
@@ -48,26 +48,24 @@ class IPythonWithReprsDirective(sphinx.util.docutils.SphinxDirective):
                 "",
             ]
 
-            # Set the Galois field element representation
             first_code_line = self.content[0]
-            if first_code_line.startswith(f"{field} = "):
-                assert "repr=" not in first_code_line
-                if element_repr == "int":
-                    new_first_code_line = first_code_line
-                else:
-                    items = first_code_line.rsplit(")", 1)
-                    assert len(items) == 2
-                    items.insert(1, f', repr="{element_repr}")')
-                    new_first_code_line = "".join(items)
+            if first_code_line.startswith(f"att_gt.fit"):
+                assert "est_method=" not in first_code_line
+
+                items = first_code_line.rsplit(")", 1)
+                assert len(items) == 2
+                items.insert(1, f', est_method="{element_repr}")')
+                new_first_code_line = "".join(items)
+
                 new_lines += [
                     f"{ws}{ws}{ws}{new_first_code_line}",
                 ]
-            else:
-                new_lines += [
-                    f"{ws}{ws}{ws}@suppress",
-                    f'{ws}{ws}{ws}{field}.repr("{element_repr}")',
-                    f"{ws}{ws}{ws}{first_code_line}",
-                ]
+            # else:
+            #     new_lines += [
+            #         f"{ws}{ws}{ws}@suppress",
+            #         f'{ws}{ws}{ws}{field}.repr("{element_repr}")',
+            #         f"{ws}{ws}{ws}{first_code_line}",
+            #     ]
 
             # Add the raw python code
             for code_line in self.content[1:]:
@@ -75,12 +73,12 @@ class IPythonWithReprsDirective(sphinx.util.docutils.SphinxDirective):
                     f"{ws}{ws}{ws}{code_line}",
                 ]
 
-            # Reset the element representation
-            new_lines += [
-                f"{ws}{ws}{ws}@suppress",
-                f"{ws}{ws}{ws}{field}.repr()",
-                "",
-            ]
+            # # Reset the element representation
+            # new_lines += [
+            #     f"{ws}{ws}{ws}@suppress",
+            #     f"{ws}{ws}{ws}{field}.repr()",
+            #     "",
+            # ]
 
         self.state_machine.insert_input(new_lines, self.state_machine.input_lines.source(0))
 

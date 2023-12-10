@@ -1,7 +1,17 @@
 differences
 ===========
 
-v0.0.1 of :obj:`differences` has no functionality, please refer to later versions
+difference-in-differences estimation and inference for Python, for the following use cases
+
+- Balanced panels, unbalanced panels & repeated cross-section
+- Two + Multiple time periods
+- Fixed + Staggered treatment timing
+- Binary + Multi-Valued treatment
+- Heterogeneous treatment effects & triple difference
+
+
+the `ATTgt <api/differences.ATTgt.html>`_  class implements the estimation procedures suggested by Callaway and Sant'Anna (2021), Sant'Anna and Zhao (2020) and the
+multi-valued treatment case discussed in Callaway, Goodman-Bacon & Sant'Anna (2021)
 
 
 .. toctree::
@@ -19,15 +29,6 @@ v0.0.1 of :obj:`differences` has no functionality, please refer to later version
 
 
 .. toctree::
-   :caption: Development
-   :hidden:
-
-   development/installation.rst
-   development/unit-tests.rst
-   development/formatting.rst
-   development/documentation.rst
-
-.. toctree::
    :caption: API
    :hidden:
    :maxdepth: 2
@@ -40,4 +41,4 @@ v0.0.1 of :obj:`differences` has no functionality, please refer to later version
    :hidden:
 
    release-notes/versioning.rst
-   release-notes/v0.0.md
+   release-notes/v0.2.md

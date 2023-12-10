@@ -1,6 +1,6 @@
 .. py:module:: differences
 
-Example
-*******
+Difference in Differences
+*************************
 
-.. python-apigen-group:: welcome
+.. python-apigen-group:: did

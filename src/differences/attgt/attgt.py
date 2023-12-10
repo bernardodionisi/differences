@@ -33,15 +33,19 @@ control_group_3l_map = {"not": "not_yet_treated", "nev": "never_treated"}
 
 class ATTgt:
     """
-    Difference in differences with
+    Group-Time ATT
 
-        - balanced panels, unbalanced panels or repeated cross-section
-        - two or multiple periods
-        - fixed or staggered treatment timing
-        - binary or multi-valued treatment
-        - heterogeneous treatment effects
+    Difference in differences estimation and inference fot the following use cases
 
-    based on the work by [CS2021]_, [CGS2022]_, [SZ2020]_
+    - balanced panels, unbalanced panels or repeated cross-section
+    - two or multiple periods
+    - fixed or staggered treatment timing
+    - binary or multi-valued treatment
+    - heterogeneous treatment effects
+
+    Group
+    -----
+        did
 
     Parameters
     ----------
