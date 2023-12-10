@@ -1,4 +1,11 @@
 from __future__ import annotations
 
-from .generate_data import simulate_data
-from differences.datasets.load_data import mpdta
+from differences.datasets.load_data import (
+    mpdta,
+    baker,
+    cs_simulation,
+    rcs_multi_period,
+    rcs_two_periods,
+    fix_did,
+    fix_stagg
+)
