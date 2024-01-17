@@ -336,7 +336,7 @@ class ATTgt:
                 data=(
                     self.data
                     if not self._dropped_nas_flag
-                    else self.data[split_sample_by].loc[
+                    else self.data.loc[
                         lambda x: x.index.isin(self._data_matrix.index)
                     ]
                 ),
