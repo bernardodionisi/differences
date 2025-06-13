@@ -13,4 +13,4 @@ except ModuleNotFoundError:  # pragma: no cover
         "\nDefaulting version to 0.0.0."
     )
 
-from differences.models.did.attgt.attgt import ATTgt
+from differences.models.attgt.attgt import ATTgt
