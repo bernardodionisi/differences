@@ -69,7 +69,7 @@ def _convert_times(
         data: pd.DataFrame,
         cohort_data: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    cohort_column = instance._cohort_column
+    cohort_column = instance.cohort_column
     time_name = instance._time_name
 
     # ------------------------------------------------------------------
@@ -129,7 +129,7 @@ def _convert_times(
 
         # cohort_column has changed
         instance._time_name = new_time_name
-        instance._cohort_column = new_cohort_column
+        instance.cohort_column = new_cohort_column
 
     # if time is int and cohort is either int or float (because of nas)
     elif not (is_integer_dtype(times) and is_numeric_dtype(cohort_data[cohort_column])):

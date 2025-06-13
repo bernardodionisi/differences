@@ -70,7 +70,7 @@ class _ValiDIData:
         instance._entity_name = entity_name
         instance._time_name = time_name
 
-        cohort_column = instance._cohort_column
+        cohort_column = instance.cohort_column
         division_column = get_treatment_info_column(instance)
 
         # ---------------- is repeated cross section? --------------
@@ -119,7 +119,7 @@ class _ValiDIData:
             instance=instance, data=data, cohort_data=cohort_data
         )
 
-        time_name, cohort_column = instance._time_name, instance._cohort_column
+        time_name, cohort_column = instance._time_name, instance.cohort_column
         # ----------------------------------------------------------
 
         # if there are no nas and there is a cohort of 0 but no 0 times
@@ -134,9 +134,9 @@ class _ValiDIData:
             )
 
         cohort_info_list = (
-            [instance._cohort_column, division_column]
+            [instance.cohort_column, division_column]
             if division_column
-            else [instance._cohort_column]
+            else [instance.cohort_column]
         )
 
         # for each entity-event_date,

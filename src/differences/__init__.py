@@ -14,7 +14,3 @@ except ModuleNotFoundError:  # pragma: no cover
     )
 
 from differences.models.did.attgt.attgt import ATTgt
-
-from differences.models.lm.twfe import TWFE
-from differences.models.lm.panel_models import PanelModels
-from differences.models.lm.panel_ols import panel_ols_fit
