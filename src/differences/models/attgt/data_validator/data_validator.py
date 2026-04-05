@@ -1,4 +1,3 @@
-"""This module used to be called panel_validation"""
 from __future__ import annotations
 
 import pandas as pd
@@ -126,11 +125,18 @@ class _ValiDIData:
         if not cohort_data_has_nas and (
                 min(data[time_name]) != min(cohort_data[cohort_column]) == 0
         ):
+            polars_message = f"""
+            df = df.with_columns(
+                    pl.when(pl.col('{cohort_column}') == 0)
+                    .then(None)
+                    .otherwise(pl.col('{cohort_column}'))
+                )
+            """
             raise ValueError(
                 f"{cohort_column} should not contain 0s for never treated groups, "
                 f"\n replace the 0s with np.nan, for example by"
                 f"\n >>> df['{cohort_column}'] = np.where(df['{cohort_column}'] == 0, "
-                f"np.nan, df['{cohort_column}'])"
+                f"np.nan, df['{cohort_column}'])\n\nor in polars:\n {polars_message}"
             )
 
         cohort_info_list = (

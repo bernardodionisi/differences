@@ -9,7 +9,7 @@ import pandas as pd
 from scipy.sparse import csr_array, hstack, issparse
 from scipy.stats import chi2
 from types import MethodType
-from differences.plot.coefficient_plot import coefficient_plot_att_gt
+# from differences.plot.coefficient_plot import coefficient_plot_att_gt
 
 
 # ------------------ output namedtuples --------------------------------
@@ -1020,7 +1020,7 @@ def output_dict_to_dataframe(
 
     # Monkey patch a no_index method to pd.DataFrame to make it faster to reset the index
     output.no_index = MethodType(no_index, output)
-    output.plot = MethodType(coefficient_plot_att_gt, output)
+    # output.plot = MethodType(coefficient_plot_att_gt, output)
 
     return output
 
