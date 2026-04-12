@@ -1,0 +1,69 @@
+/* ---------------------------------------------------------------
+   Make list-tables fill the container in sphinx-immaterial
+-----------------------------------------------------------------*/
+
+/* 1) Fix the wrapper: let the table expand, not scroll to fit-content */
+.md-typeset .md-typeset__table {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;         /* allow full-width table */
+}
+
+/* 2) Force the actual table to span the full width */
+.md-typeset .md-typeset__table .table-rst,
+.md-typeset .table-rst {
+  display: table !important;            /* cancel theme's display: block */
+  inline-size: 100% !important;         /* logical width: 100% */
+  width: 100% !important;               /* physical width for older engines */
+  min-width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;       /* stretch columns evenly */
+  border: none !important;              /* no outer borders */
+  border-collapse: separate !important; /* keep pseudo-line crisp */
+  border-spacing: 0 !important;
+}
+
+/* 3) Nuke any cell borders the theme adds */
+.md-typeset .table-rst th,
+.md-typeset .table-rst td {
+  border: none !important;
+  padding: 0.6em 0.8em;
+  vertical-align: top;
+}
+
+/* 4) Full-width, adaptive separators (light & dark) via a pseudo-element */
+[data-md-color-scheme="default"] { --table-rst-line-color: rgba(0,0,0,.18); }
+[data-md-color-scheme="slate"]   { --table-rst-line-color: rgba(255,255,255,.18); }
+
+.md-typeset .table-rst tr { position: relative; }
+
+.md-typeset .table-rst tr::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;                        /* span entire row width */
+  bottom: 0;
+  block-size: 1px;                        /* 1px hairline */
+  background: var(--table-rst-line-color);
+  pointer-events: none;
+}
+
+.md-typeset .table-rst tr:last-child::after { display: none; }
+
+/* 5) Optional: first column behaves like "25 75" widths in RST */
+.md-typeset .table-rst td:first-child,
+.md-typeset .table-rst th:first-child {
+  inline-size: 25%;
+  font-weight: 500;
+}
+
+/* 6) Ultra-gentle hover that works in both schemes */
+.md-typeset .table-rst tr:hover {
+  background-color: color-mix(in oklab, Canvas 96%, var(--table-rst-line-color) 8%);
+}
+
+/* Fallback hover for engines without color-mix */
+@supports not (color: color-mix(in oklab, white, black)) {
+  .md-typeset .table-rst tr:hover {
+    background-color: rgba(127,127,127,.06);
+  }
+}
