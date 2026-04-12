@@ -303,7 +303,7 @@ def did_single_gt(
             cohort_stratum_dummy=None,
             stratum_dummy=None,
             exception=ex,
-            ATT=np.NaN,  # att, need nan to do some operations
+            ATT=np.nan,  # att, need nan to do some operations
             influence_func=None,
         )
 
@@ -476,7 +476,7 @@ def get_standard_errors(
 
     # create an empty array to populate with the standard errors
     se_array = np.empty(len(ntl))
-    se_array[:] = np.NaN
+    se_array[:] = np.nan
 
     if boot_iterations:
 

@@ -392,7 +392,7 @@ def output_difference_namedtuple(
     # fill the last entries with NAs if missing
     if missing:
         missing = 4  # std_error, lower, upper, boot_iterations
-        args = *args, *[np.NaN] * missing
+        args = *args, *[np.nan] * missing
 
     nt = namedtuple(f"Difference{nt_name}", fields)
 

@@ -78,7 +78,7 @@ def aggregation_namedtuple(
     missing = len(include_fields) - len(args)
     if missing:  # fill missing with NAs
         missing = 4  # std_error, lower, upper, boot_iterations
-        args = *args, *[np.NaN] * missing
+        args = *args, *[np.nan] * missing
 
     if type_of_aggregation == "simple" or overall:
         name = f"{type_of_aggregation.title()}Aggregation"
