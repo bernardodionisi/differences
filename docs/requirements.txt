@@ -1,7 +1,0 @@
-sphinx
-sphinx-immaterial
-sphinx-design
-sphinx-last-updated-by-git
-sphinx-math-dollar
-ipykernel
-myst-parser

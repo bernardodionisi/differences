@@ -1,5 +1,10 @@
-differences
-===========
+.. image:: imgs/logo/bw/logo_name_bw.png
+   :align: center
+   :width: 50%
+   :target: index.html
+
+Highlights 🚀
+=============
 
 difference-in-differences estimation and inference for Python, for the following use cases
 
@@ -15,17 +20,10 @@ multi-valued treatment case discussed in Callaway, Goodman-Bacon & Sant'Anna (20
 
 
 .. toctree::
-   :caption: Getting Started
+   :caption: Installation
    :hidden:
 
-   getting-started.rst
-
-
-.. toctree::
-   :caption: Basic Usage
-   :hidden:
-
-   basic-usage/basic-usage.rst
+   pages/installation.rst
 
 
 .. toctree::
@@ -33,12 +31,4 @@ multi-valued treatment case discussed in Callaway, Goodman-Bacon & Sant'Anna (20
    :hidden:
    :maxdepth: 2
 
-   api.rst
-
-
-.. toctree::
-   :caption: Release Notes
-   :hidden:
-
-   release-notes/versioning.rst
-   release-notes/v0.2.md
+   pages/api.rst

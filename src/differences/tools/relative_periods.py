@@ -4,17 +4,16 @@ from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-from pandas import DataFrame, Index, MultiIndex
 
-from ..tools.panel_utility import panel_has_gaps, reindex_gaps
+from differences.models.attgt.data_validator.panel_utility import panel_has_gaps, reindex_gaps
 
 
 def cohort_info_table(
-        cohort_data: DataFrame,
+        cohort_data: pd.DataFrame,
         pivot_values: str,
-        data_index: Optional[Union[MultiIndex, Index]] = None,
+        data_index: Optional[Union[pd.MultiIndex, pd.Index]] = None,
         fill_gaps: bool = True,
-) -> DataFrame:
+) -> pd.DataFrame:
     """
     pivots cohort_data
 
@@ -38,10 +37,11 @@ def cohort_info_table(
     -------
 
     """
-    entity_name = cohort_data.index.name
+    entity_name = cohort_data.index._name
 
     cohort_table = (
-        cohort_data.sort_index()
+        cohort_data
+        .sort_index()
         .assign(event_number=lambda x: x.groupby(entity_name).cumcount() + 1)
         .pivot_table(index=entity_name, values=pivot_values, columns="event_number")
     )
@@ -49,7 +49,7 @@ def cohort_info_table(
     if data_index is not None:  # expand the cohort_data to panel leve, just for treated
         entity_name, time_name = data_index.names
 
-        cohort_table_rep = DataFrame(index=data_index).loc[  # only keep treated
+        cohort_table_rep = pd.DataFrame(index=data_index).loc[  # only keep treated
             lambda x: x.index.get_level_values(entity_name).isin(cohort_table.index)
         ]
 
@@ -71,16 +71,16 @@ def cohort_info_table(
     return cohort_table
 
 
-def get_relative_periods(cohort_table: DataFrame):
+def get_relative_periods(cohort_table: pd.DataFrame):
     return np.array(cohort_table.index.get_level_values(1))[:, None] - cohort_table
 
 
 def get_relative_periods_dummies(
-        cohort_table: DataFrame,
-        intensity_table: DataFrame = None,
+        cohort_table: pd.DataFrame,
+        intensity_table: pd.DataFrame = None,
         start: int = None,
         end: int = None,
-) -> tuple[DataFrame, int, int]:
+) -> tuple[pd.DataFrame, int, int]:
     if start is not None and end is not None:
         if start * end > 0 and abs(start) > abs(end):
             raise ValueError("must be: start <= end")
@@ -105,11 +105,11 @@ def get_relative_periods_dummies(
 
         if is_single_event and all_dummies:
             # [1] because events are indexed starting from 1, in cohort_info_table - event_number
-            events_cols = pd.get_dummies(rp_table[1])
+            events_cols = pd.get_dummies(rp_table[1], dtype=int)
 
         else:
             events_cols = pd.concat(
-                [DataFrame(np.sum(rp_table == t, axis=1), columns=[t]) for t in window],
+                [pd.DataFrame(np.sum(rp_table == t, axis=1), columns=[t]) for t in window],
                 axis=1,
             )
 
@@ -120,7 +120,7 @@ def get_relative_periods_dummies(
         else:
             events_cols = pd.concat(
                 [
-                    DataFrame(
+                    pd.DataFrame(
                         np.sum(intensity_table[(rp_table == t)], axis=1), columns=[t]
                     )
                     for t in window
@@ -132,11 +132,11 @@ def get_relative_periods_dummies(
 
 
 def bin_relative_periods_dummies(
-        periods_dummies: DataFrame,
+        periods_dummies: pd.DataFrame,
         bin_start: bool = True,
         bin_end: bool = True,
         copy_data: bool = True,
-) -> DataFrame:
+) -> pd.DataFrame:
     """bins the relative times at the endpoints. if multiple events it's a sum"""
     if copy_data:
         periods_dummies = periods_dummies.copy()
@@ -171,7 +171,7 @@ def bin_relative_periods_dummies(
     return periods_dummies
 
 
-def reindex_periods(periods_dummies: DataFrame, reindex_index: MultiIndex) -> DataFrame:
+def reindex_periods(periods_dummies: pd.DataFrame, reindex_index: pd.MultiIndex) -> pd.DataFrame:
     return periods_dummies.reindex(reindex_index, fill_value=0).astype(int)
 
 # ----------------------------------------------------------------------

@@ -10,8 +10,8 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+from __future__ import annotations
 
-import inspect
 import os
 import sys
 
@@ -21,57 +21,86 @@ sys.path.insert(0, os.path.abspath(".."))
 # Need to build docs with Python 3.8 or higher for proper typing annotations, including from __future__ import annotations
 assert sys.version_info.major == 3 and sys.version_info.minor >= 8
 
-# Assign a build variable to the builtin module that inerts the @set_module decorator. This is done because set_module
-# confuses Sphinx when parsing overloaded functions. When not building the documentation, the @set_module("differences")
+# Assign a build variable to the builtin module that inerts
+# the @set_module decorator. This is done because set_module
+# confuses Sphinx when parsing overloaded functions.
+# When not building the documentation, the @set_module("differences")
 # decorator works as intended.
 import builtins
 
-setattr(builtins, "__sphinx_build__", True)
+builtins.__sphinx_build__ = True
 
-import sphinx
+from pathlib import Path
 
 import differences
+import datetime
 
 # -- Project information -----------------------------------------------------
 
 project = "differences"
-copyright = "2023, Bernardo Dionisi"
+copyright = f"{datetime.date.today().year}, Bernardo Dionisi"
 author = "Bernardo Dionisi"
 version = differences.__version__
 
 # -- General configuration ---------------------------------------------------
 
+# sphinx_tutorials.generate(
+#     docs_path=Path(__file__).parent.absolute(),
+#     tutorials_source_path=Path(__file__).parent.parent.absolute() / "tutorials",
+#     tutorials_dest_path=Path(__file__).parent.absolute() / "pages",
+#     style=True,
+#     overwrite_style=True,
+#     overwrite_tutorials=True,
+#     include_suffixes=[".ipynb", ".py"],
+#     exclude_prefixes=[".", "_"]
+# )
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
 # ones.
 extensions = [
+
     "sphinx.ext.autodoc",
+
+    # 'sphinx.ext.viewcode',  #  helpful
+
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "sphinx.ext.intersphinx",
     # ---
-    # "sphinx_copybutton",
 
-    "sphinx_last_updated_by_git",
+    # "sphinx_last_updated_by_git",
     "sphinx_immaterial",
     "sphinx_immaterial.apidoc.python.apigen",
-    "sphinx_math_dollar",
-    "myst_parser",
+
     "sphinx_design",
+    "myst_parser",  # Write source in markdown, not rst. a dependency of myst_nb
+
+    # "sphinx_autosummary_accessors",
+    # "sphinx_math_dollar",
+    # "myst_nb",  # for notebooks
+
     "IPython.sphinxext.ipython_console_highlighting",
     "IPython.sphinxext.ipython_directive",
-    "ipython_with_reprs",
+
+    # "sphinx_toolbox.more_autodoc.overloads",
+
+    "sphinx_tutorials.ext",
+    "sphinx_tutorials.other_extensions.autodoc_ext",
+    "sphinx_tutorials.other_extensions.sig_shaper.sig_shaper",
 
 ]
 
-# # --- exclude In [x]: and Out[x]: when copying ---
-# # Configuration for sphinx_copybutton
-# copybutton_prompt_text = r"^In \[\d+\]:.*?|Out\[\d+\]:.*?$"
-# copybutton_prompt_is_regexp = True
+# overloads_location = ["top"]
+
+# https://myst-nb.readthedocs.io/en/v0.12.2/use/execute.html
+jupyter_execute_notebooks = "off"
+
 # ------------------------------------------------
 
 
 # Add any paths that contain templates here, relative to this directory.
+# templates_path = ["_templates", sphinx_autosummary_accessors.templates_path]
 templates_path = ["_templates"]
 
 # The suffix(es) of source filenames.
@@ -101,41 +130,55 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".ipynb_checkpoints"]
 #
 html_theme = "sphinx_immaterial"
 
+# ----------------------------------------------------------------------
+
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
+
+
 html_static_path = ["_static"]
 
+# Copy bundled st-*.css/js into _static before Sphinx scans html_static_path.
+# The sphinx_tutorials extension copies at builder-inited, which is too late:
+# Sphinx caches the static file list earlier, so assets would be referenced in
+# HTML but missing from the build output on fresh checkouts (CI).
+from sphinx_tutorials import generate as _st_generate
+_st_generate(docs_path=Path(__file__).parent, style=True, overwrite_style=True)
+
 html_css_files = [
-    "extra.css",
+    # built in sphinx-immaterial but star not showing properly
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
 ]
+
+# ----------------------------------------------------------------------
 
 # Define a custom inline Python syntax highlighting literal
 rst_prolog = """
 .. role:: python(code)
    :language: python
    :class: highlight
-
-.. role:: underline
 """
 
 # Sets the default role of `content` to :python:`content`, which uses the custom Python syntax highlighting inline literal
 default_role = "python"
 
 html_title = "differences"
-# html_favicon = "../logo/differences-favicon-color.png"
-# html_logo = "../logo/differences-favicon-white.png"
 
-html_logo = "logo/favicon-white.png"
+# html_logo = "logo/favicon-white.png"
+html_favicon = "imgs/logo/dots.png"
+html_logo = "imgs/logo/dots.png"
 
 # Sphinx Immaterial theme options
 html_theme_options = {
     "icon": {
         "repo": "fontawesome/brands/github",
     },
-    "site_url": "https://differences.readthedocs.io/",  # todo: <---- no read the docs?
+    "site_url": "https://bernardodionisi.github.io/differences/",
     "repo_url": "https://github.com/bernardodionisi/differences",
     "repo_name": "bernardodionisi/differences",
+
     "social": [
         {
             "icon": "fontawesome/brands/github",
@@ -146,49 +189,68 @@ html_theme_options = {
             "link": "https://pypi.org/project/differences/",
         },
     ],
-    "edit_uri": "",
+    # "edit_uri": "",
+
     "globaltoc_collapse": False,
+
     "features": [
         # "navigation.expand",
         "navigation.tabs",
+        "navigation.tabs.sticky",
         # "toc.integrate",
         # "navigation.sections",
         # "navigation.instant",
         # "header.autohide",
         "navigation.top",
-        "navigation.tracking",
+        # "navigation.tracking",
+        # "toc.integrate", # <- places the page TOC into the left nav, not great
+
         "toc.follow",
         "toc.sticky",
         "content.tabs.link",
         "announce.dismiss",
+        "content.code.copy",  # copybotton
+
     ],
+
     "palette": [
-        {
-            "media": "(prefers-color-scheme: light)",
-            "scheme": "default",
-            "toggle": {
-                "icon": "material/weather-night",
-                "name": "Switch to dark mode",
-            },
-        },
+        # {
+        #     "media": "(prefers-color-scheme: light)",
+        #     "scheme": "default",
+        #
+        #     "primary": "custom",
+        #     "accent": "custom",
+        #
+        #     "toggle": {
+        #         "icon": "material/weather-night",
+        #         "name": "Switch to dark mode",
+        #     },
+        # },
         {
             "media": "(prefers-color-scheme: dark)",
             "scheme": "slate",
-            "toggle": {
-                "icon": "material/weather-sunny",
-                "name": "Switch to light mode",
-            },
+
+            "primary": "custom",
+            "accent": "custom",
+
+            # "toggle": {
+            #     "icon": "material/weather-sunny",
+            #     "name": "Switch to light mode",
+            # },
         },
     ],
+
     "analytics": {
         "provider": "google",
         "property": "G-4FW9NCNFZH",
     },
+
     "version_dropdown": True,
     "version_json": "../versions.json",
 }
 
-html_last_updated_fmt = ""
+# html_last_updated_fmt = None
+
 html_use_index = True
 html_domain_indices = True
 
@@ -197,26 +259,34 @@ html_domain_indices = True
 # Create hyperlinks to other documentation
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "polars": ("https://pola-rs.github.io/polars/py-polars/html", None),
+    "polars": ("https://docs.pola.rs/api/python/stable", None)
 }
 
 autodoc_default_options = {
+
+    'members': True,
+    'undoc-members': True,
+
+    "inherited-members": True,
     "imported-members": True,
-    "members": True,
+
+    # 'show-inheritance': True,
+
     # "special-members": True,
     # "inherited-members": "ndarray",
     # "member-order": "groupwise",
 }
+
+# autodoc_typehints = "description"
+
 autodoc_typehints = "signature"
 autodoc_typehints_description_target = "documented"
 autodoc_typehints_format = "short"
+# autodoc_inherit_docstrings = True
 
-autodoc_type_aliases = {
-    "pl.DataFrame": "polars.DataFrame",
-    "pl.LazyFrame": "polars.LazyFrame",
-}
 
-ipython_execlines = ["import differences"]
+# -----------
+
 
 myst_enable_extensions = ["dollarmath"]
 
@@ -234,11 +304,38 @@ mathjax3_config = {
     }
 }
 
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
+sphinx_tutorials_generate = {
+    # Relative to docs/ (confdir)
+    "tutorials_source_path": "../tutorials",
+    "tutorials_dest_path": "pages",
+    "style": True,
+    "overwrite_style": True,
+    "overwrite_tutorials": True,
+    "include_suffixes": [".ipynb", ".py"],
+    "exclude_prefixes": [".", "_"],
+}
+
+
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
+
 # -- Sphinx Immaterial configs -------------------------------------------------
 
 # Python apigen configuration
 python_apigen_modules = {
     "differences": "api/differences.",
+
+}
+
+autodoc_type_aliases = {
+
 }
 
 python_apigen_default_groups = [
@@ -254,6 +351,7 @@ python_apigen_default_groups = [
     ("property:.*", "Properties"),
     (r".*:.*\.info_[a-z,_]*", "Metadata"),
     (r".*:.*\.to_[a-z,_]*", "Export"),
+    (r".*:.*\.set_[a-z,_]*", "Config"),
     # (r".*:.*\.is_[a-z,_]*", "Attributes"),
 ]
 python_apigen_default_order = [
@@ -261,17 +359,21 @@ python_apigen_default_order = [
     ("data:.*", 11),
     ("function:.*", 12),
     ("classmethod:.*", 40),
-    ("method:.*", 50),
+    ("property:.*", 45),
+    ("method:.*", 45),  # 50
     (r"method:.*\.[A-Z][A-Za-z,_]*", 20),
     (r"method:.*\.__[A-Za-z,_]*__", 28),
     (r"method:.*\.__(init|new)__", 20),
     (r"method:.*\.__(str|repr)__", 30),
-    ("property:.*", 60),
     (r".*:.*\.info_[a-z,_]*", 70),
     (r".*:.*\.to_[a-z,_]*", 80),
+    (r".*:.*\.set_[a-z,_]*", 40),
+
     # (r".*:.*\.is_[a-z,_]*", 70),
 ]
-python_apigen_order_tiebreaker = "alphabetical"
+# python_apigen_order_tiebreaker = "alphabetical"
+python_apigen_order_tiebreaker = "definition_order"
+
 python_apigen_case_insensitive_filesystem = False
 python_apigen_show_base_classes = True
 
@@ -283,225 +385,137 @@ python_module_names_to_strip_from_xrefs = ["collections.abc"]
 object_description_options = [
     ("py:.*", dict(include_rubrics_in_toc=True)),
 ]
+sphinx_immaterial_icon_path = ["imgs/logo"]
 
 sphinx_immaterial_custom_admonitions = [
+
+
+    # ----------------------------------------------
+
     {
-        "name": "dataset-description",
+        "name": "optional-dependencies",
         "color": (54, 69, 79),
-        "title": "Dataset Information (click to expand)",
-        "icon": "material/database",
+        "title": "Optional Dependencies",
+        "icon": "octicons/download-16",
         "override": True,
     },
 
     {
-        "name": "code-example",
-        "color": (95, 132, 142),
-        "title": "Code Example",
-        "icon": "material/code-tags",
+        "name": "fire",
+        "color": "#E07F2D",
+        "title": "",
+        "icon": "material/fire",
         "override": True,
     },
 
-    {
-        "name": "sources-description",
-        "color": (54, 69, 79),
-        "title": "Sources Information (click to expand)",
-        "icon": "material/database",
-        "override": True,
-    },
-
-    {
-        "name": "seealso",
-        "title": "See also",
-        "classes": ["collapsible"],
-        "icon": "fontawesome/regular/eye",
-        "override": True,
-    },
     {
         "name": "star",
         "icon": "octicons/star-16",
         "color": (255, 233, 3),  # Gold
     },
+
     {
-        "name": "fast-performance",
-        "title": "Faster performance",
-        "icon": "material/speedometer",
-        "color": (47, 177, 112),  # Green: --md-code-hl-string-color
+        "name": "acknowledgements",
+        "color": (150, 59, 41),
+        "title": "Acknowledgements",
+        "icon": "material/heart",
+        "override": True,
     },
+    # ----------------------------------------------
+
+    # {
+    #     "name": "features",
+    #     "color": (54, 69, 79),
+    #     "title": "Features",
+    #     "icon": "octicons/rocket",
+    #     "override": True,
+    # },
+
     {
-        "name": "slow-performance",
-        "title": "Slower performance",
-        "icon": "material/speedometer-slow",
-        "color": (230, 105, 91),  # Red: --md-code-hl-number-color
+        "name": "dataset-description",
+        "color": (54, 69, 79),
+        "title": "Dataset Information",
+        "icon": "material/database",
+        "override": True,
     },
+
+    # ------------------------------------------------------------------
+
+    {
+        "name": "setup",
+        # "color": (54, 69, 79),
+        "color": (105, 82, 82),
+
+        "title": "Setup",
+        "icon": "material/code-braces",  # or "mdi/postage-stamp"
+        "override": True,
+    },
+    # ------------------------------------------------------------------
+
+
 ]
 
-# -- Monkey-patching ---------------------------------------------------------
+OUTER_DEFAULT = {"color": (82, 93, 97), "override": True}
 
-SPECIAL_MEMBERS = [
-    "__repr__",
-    "__str__",
-    "__int__",
-    "__call__",
-    "__len__",
-    "__eq__",
-]
+OUTER_ICONS = {
 
+}
 
-def autodoc_skip_member(app, what, name, obj, skip, options):
-    """
-    Instruct autodoc to skip members that are inherited from np.ndarray.
-    """
-    if skip:
-        # Continue skipping things Sphinx already wants to skip
-        return skip
+INNER_DEFAULT = {"color": (54, 69, 79), "override": True}
 
-    if name == "__init__":
-        return False
-    # elif hasattr(obj, "__objclass__"):
-    #     # This is a NumPy method, don't include docs
-    #     return True
-    # elif getattr(obj, "__qualname__", None) in ["FunctionMixin.dot", "Array.astype"]:
-    #     # NumPy methods that were overridden, don't include docs
-    #     return True
-    # elif (
-    #         hasattr(obj, "__qualname__")
-    #         and getattr(obj, "__qualname__").split(".")[0] == "FieldArray"
-    #         and hasattr(numpy.ndarray, name)
-    # ):
-    #     if name in ["__repr__", "__str__"]:
-    #         # Specifically allow these methods to be documented
-    #         return False
-    #     else:
-    #         # This is a NumPy method that was overridden in one of our ndarray subclasses. Also don't include
-    #         # these docs.
-    #         return True
+INNER_ICONS = {
+}
 
-    if name in SPECIAL_MEMBERS:
-        # Don't skip members in "special-members"
-        return False
+# extend your existing list
+sphinx_immaterial_custom_admonitions.extend(
+    {
+        "name": f"differences-{title.lower().replace(' ', '-')}",
+        "title": title,
+        "icon": icon,
+        **INNER_DEFAULT,
+    }
+    for title, icon in INNER_ICONS.items()
+)
 
-    if name[0] == "_":
-        # For some reason we need to tell Sphinx to hide private members
-        return True
+sphinx_immaterial_custom_admonitions.extend(
+    {
+        "name": f"differences-{title.lower().replace(' ', '-')}",
+        "title": title,
+        "icon": icon,
+        **OUTER_DEFAULT,
+    }
+    for title, icon in OUTER_ICONS.items()
+)
 
-    return skip
+from sphinx.application import Sphinx
+
+TARGET_DOC_PREFIXES = (
+)
+
+CSS_BLOCK = (
+    ".. raw:: html\n\n"
+    "   <style>\n"
+    "     /* Keep the secondary sidebar column but hide its content only */\n"
+    "     .md-sidebar--secondary{visibility:hidden; pointer-events:none}\n"
+    "   </style>\n"
+    "\n"
+)
 
 
-def autodoc_process_bases(app, name, obj, options, bases):
-    """
-    Remove private classes or mixin classes from documented class bases.
-    """
-    # Determine the bases to be removed
-    remove_bases = []
-    for base in bases:
-        if base.__name__[0] == "_" or "Mixin" in base.__name__:
-            remove_bases.append(base)
-
-    # Remove from the bases list in-place
-    for base in remove_bases:
-        bases.remove(base)
+def _affects_target(docname: str) -> bool:
+    return any(docname == p or docname.startswith(p + "/") for p in TARGET_DOC_PREFIXES)
 
 
-# Only during Sphinx builds, monkey-patch the metaclass properties into this class as "class properties". In Python 3.9 and greater,
-# class properties may be created using `@classmethod @property def foo(cls): return "bar"`. In earlier versions, they must be created
-# in the metaclass, however Sphinx cannot find or document them. Adding this workaround allows Sphinx to document them.
-
-# INHERITED MEMBERS : https://github.com/jbms/sphinx-immaterial/issues/122
-
-# def classproperty(obj):
-#     ret = classmethod(obj)
-#     ret.__doc__ = obj.__doc__
-#     return ret
-# 
-# 
-# ArrayMeta_properties = [
-#     member for member in dir(differences.Array) if inspect.isdatadescriptor(getattr(type(differences.Array), member, None))
-# ]
-# for p in ArrayMeta_properties:
-#     # Fetch the class properties from the private metaclasses
-#     ArrayMeta_property = getattr(differences._domains._meta.ArrayMeta, p)
-# 
-#     # Temporarily delete the class properties from the private metaclasses
-#     delattr(differences._domains._meta.ArrayMeta, p)
-# 
-#     # Add a Python 3.9 style class property to the public class
-#     setattr(differences.Array, p, classproperty(ArrayMeta_property))
-# 
-#     # Add back the class properties to the private metaclasses
-#     setattr(differences._domains._meta.ArrayMeta, p, ArrayMeta_property)
-# 
-# 
-# FieldArrayMeta_properties = [
-#     member
-#     for member in dir(differences.FieldArray)
-#     if inspect.isdatadescriptor(getattr(type(differences.FieldArray), member, None))
-# ]
-# for p in FieldArrayMeta_properties:
-#     # Fetch the class properties from the private metaclasses
-#     if p in ArrayMeta_properties:
-#         ArrayMeta_property = getattr(differences._domains._meta.ArrayMeta, p)
-#     FieldArrayMeta_property = getattr(differences._fields._meta.FieldArrayMeta, p)
-# 
-#     # Temporarily delete the class properties from the private metaclasses
-#     if p in ArrayMeta_properties:
-#         delattr(differences._domains._meta.ArrayMeta, p)
-#     delattr(differences._fields._meta.FieldArrayMeta, p)
-# 
-#     # Add a Python 3.9 style class property to the public class
-#     setattr(differences.FieldArray, p, classproperty(FieldArrayMeta_property))
-# 
-#     # Add back the class properties to the private metaclasses
-#     if p in ArrayMeta_properties:
-#         setattr(differences._domains._meta.ArrayMeta, p, ArrayMeta_property)
-#     setattr(differences._fields._meta.FieldArrayMeta, p, FieldArrayMeta_property)
+def _inject_css(app: Sphinx, docname: str, source: list[str]) -> None:
+    if not _affects_target(docname):
+        return
+    text = source[0]
+    # Strip real BOM if present (use the actual char, NOT the string "\u....")
+    text = text.lstrip("\ufeff")
+    # Make sure our CSS block is at byte 0 and followed by a blank line
+    if not text.startswith(".. raw:: html"):
+        source[0] = CSS_BLOCK + text
 
 
-def autodoc_process_signature(app, what, name, obj, options, signature, return_annotation):
-    signature = modify_type_hints(signature)
-    return_annotation = modify_type_hints(return_annotation)
-    return signature, return_annotation
-
-
-def modify_type_hints(signature):
-    """
-    Fix shortening numpy type annotations in string annotations created with
-    `from __future__ import annotations` that Sphinx can't process before Python
-    3.10.
-
-    See https://github.com/jbms/sphinx-immaterial/issues/161
-    """
-    if signature:
-        signature = signature.replace("np", "~numpy")
-    return signature
-
-
-def monkey_patch_parse_see_also():
-    """
-    Use the NumPy docstring parsing of See Also sections for convenience. This automatically
-    hyperlinks plaintext functions and methods.
-    """
-    # Add the special parsing method from NumpyDocstring
-    method = sphinx.ext.napoleon.NumpyDocstring._parse_numpydoc_see_also_section
-    sphinx.ext.napoleon.GoogleDocstring._parse_numpydoc_see_also_section = method
-
-    def _parse_see_also_section(self, section: str):
-        """Copied from NumpyDocstring._parse_see_also_section()."""
-        lines = self._consume_to_next_section()
-
-        # Added: strip whitespace from lines to satisfy _parse_numpydoc_see_also_section()
-        for i in range(len(lines)):
-            lines[i] = lines[i].strip()
-
-        try:
-            return self._parse_numpydoc_see_also_section(lines)
-        except ValueError:
-            return self._format_admonition("seealso", lines)
-
-    sphinx.ext.napoleon.GoogleDocstring._parse_see_also_section = _parse_see_also_section
-
-
-def setup(app):
-    monkey_patch_parse_see_also()
-    app.connect("autodoc-skip-member", autodoc_skip_member)
-    app.connect("autodoc-process-bases", autodoc_process_bases)
-    app.connect("autodoc-process-signature", autodoc_process_signature)
+def setup(app: Sphinx) -> None:
+    app.connect("source-read", _inject_css)

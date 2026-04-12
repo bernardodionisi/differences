@@ -1,4 +1,4 @@
-<img src="./docs/logo/bw/logo_name_bw.png" alt="drawing" width="200"
+<img src="./docs/imgs/logo/bw/logo_name_bw.png" alt="drawing" width="200"
 style="display: block;margin-left: auto;margin-right: auto;width: 80%;"/>
 
 difference-in-differences estimation and inference for Python
@@ -10,10 +10,9 @@ difference-in-differences estimation and inference for Python
 - Fixed + Staggered treatment timing
 - Binary + Multi-Valued treatment
 - Heterogeneous treatment effects & triple difference
+- Parallelized estimation & multiplier bootstrap (joblib, via `n_jobs`)
 
 see the [Documentation](https://bernardodionisi.github.io/differences/latest/) for more details.
-
-> **_NOTE:_** Please note that in v0.2.0 the `.plot()` methods have been temporarily removed as well the `TWFE` class. They will be added back to this library in a future release. Please refer to the [Release Notes](https://bernardodionisi.github.io/differences/latest/release-notes/v0.2/) for a list of changes.
 
 ## Installing
 
@@ -23,7 +22,7 @@ The latest release can be installed using pip
 pip install differences
 ```
 
-requires Python >= 3.9
+requires Python >= 3.10
 
 ## Quick Start
 
@@ -36,17 +35,17 @@ multi-valued treatment case discussed
 in [Callaway, Goodman-Bacon & Sant'Anna (2021)](https://arxiv.org/abs/2107.02637)
 
 ```python
-from differences import ATTgt, simulate_data
+import differences
 
-df = simulate_data()
+df = differences.generate_data()  # requires the [all] extra: pip install differences[all]
 
-att_gt = ATTgt(data=df, cohort_name='cohort')
+att_gt = differences.ATTgt(data=df, cohort_column='cohort')
 
-att_gt.fit(formula='y')
+att_gt.fit(formula='y', n_jobs=-1)
 
 att_gt.aggregate('event')
 ```
 
-*differences* ATTgt benefited from
+*differences* ATTgt was inspired by
 - Callaway & Sant'Anna's [did](https://github.com/bcallaway11/did)
 - Sant'Anna and Zhao's [DRDID](https://github.com/pedrohcgs/DRDID)
