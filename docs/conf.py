@@ -179,7 +179,7 @@ html_theme_options = {
     "icon": {
         "repo": "fontawesome/brands/github",
     },
-    "site_url": "https://differences.readthedocs.io/",  # TODO: <---- no read the docs?
+    "site_url": "https://bernardodionisi.github.io/differences/",
     "repo_url": "https://github.com/bernardodionisi/differences",
     "repo_name": "bernardodionisi/differences",
 

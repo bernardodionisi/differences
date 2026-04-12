@@ -10,6 +10,7 @@ difference-in-differences estimation and inference for Python
 - Fixed + Staggered treatment timing
 - Binary + Multi-Valued treatment
 - Heterogeneous treatment effects & triple difference
+- Parallelized estimation & multiplier bootstrap (joblib, via `n_jobs`)
 
 see the [Documentation](https://bernardodionisi.github.io/differences/latest/) for more details.
 
@@ -21,7 +22,7 @@ The latest release can be installed using pip
 pip install differences
 ```
 
-requires Python >= 3.9
+requires Python >= 3.10
 
 ## Quick Start
 
@@ -36,11 +37,11 @@ in [Callaway, Goodman-Bacon & Sant'Anna (2021)](https://arxiv.org/abs/2107.02637
 ```python
 import differences
 
-df = differences.generate_data()
+df = differences.generate_data()  # requires the [all] extra: pip install differences[all]
 
 att_gt = differences.ATTgt(data=df, cohort_column='cohort')
 
-att_gt.fit(formula='y')
+att_gt.fit(formula='y', n_jobs=-1)
 
 att_gt.aggregate('event')
 ```

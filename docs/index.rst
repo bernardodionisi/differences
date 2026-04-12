@@ -27,14 +27,6 @@ multi-valued treatment case discussed in Callaway, Goodman-Bacon & Sant'Anna (20
 
 
 .. toctree::
-   :caption: Tutorials
-   :hidden:
-   :maxdepth: 2
-
-   pages/tutorials.rst
-
-
-.. toctree::
    :caption: API
    :hidden:
    :maxdepth: 2
