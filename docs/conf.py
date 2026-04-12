@@ -167,8 +167,8 @@ default_role = "python"
 html_title = "differences"
 
 # html_logo = "logo/favicon-white.png"
-html_favicon = "imgs/logo/logo_name_bw.png"
-html_logo = "imgs/logo/logo_name_bw.png"
+html_favicon = "imgs/logo/dots.png"
+html_logo = "imgs/logo/dots.png"
 
 # Sphinx Immaterial theme options
 html_theme_options = {
