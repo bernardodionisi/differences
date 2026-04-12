@@ -1,0 +1,61 @@
+/*!* ==========================================================================*/
+/*   06) TABS*/
+/*   - Container styling*/
+/*   - Section label via ::before*/
+/*   - Active underline*/
+/*   ========================================================================== *!*/
+
+/* Tab container frame */
+[data-md-color-scheme="default"] .st-custom-tab-set-style,
+[data-md-color-scheme="slate"] .st-custom-tab-set-style {
+    /*border: 1.8px solid #3A3D45;*/
+    padding: 0 5px;
+    border-radius: 5px;
+    position: relative;
+}
+
+/*!* Optional header (uses the element's id as title) *!*/
+/*[data-md-color-scheme="default"] .st-custom-tab-set-style[id]::before,*/
+/*[data-md-color-scheme="slate"] .st-custom-tab-set-style[id]::before {*/
+/*    content: attr(id);*/
+/*    display: block;*/
+/*    padding: 25px;*/
+/*    font-weight: bold;*/
+/*    text-align: center;*/
+/*    !*white-space: pre-line;*!*/
+/*    !*text-transform: capitalize;*!*/
+/*}*/
+
+
+/*!* ------------------*!*/
+
+/*!* Container styling *!*/
+/*[data-md-color-scheme="default"] .st-custom-tab-set-style,*/
+/*[data-md-color-scheme="slate"] .st-custom-tab-set-style {*/
+/*  border: 1.8px solid #6c757d;*/
+/*  padding: 0 5px;*/
+/*  border-radius: 5px;*/
+/*  position: relative;*/
+/*}*/
+
+/*!* Inactive tabs *!*/
+/*[data-md-color-scheme="default"] .st-custom-tab-set-style .tabbed-set .tabbed-labels--linked > label,*/
+/*[data-md-color-scheme="slate"] .st-custom-tab-set-style .tabbed-set .tabbed-labels--linked > label {*/
+/*  color: var(--md-default-fg-color--light);*/
+/*  border-bottom: 3px solid transparent;*/
+/*}*/
+
+/*!* Active tab *!*/
+/*[data-md-color-scheme="default"] .st-custom-tab-set-style .tabbed-set .tabbed-labels--linked > input:checked + label,*/
+/*[data-md-color-scheme="slate"] .st-custom-tab-set-style .tabbed-set .tabbed-labels--linked > input:checked + label {*/
+/*  color: var(--md-typeset-a-color) !important;*/
+/*  border-bottom: 3px solid var(--md-typeset-a-color);*/
+/*  font-weight: 600;*/
+/*}*/
+
+/*!* Hover effect *!*/
+/*[data-md-color-scheme="default"] .st-custom-tab-set-style .tabbed-set .tabbed-labels--linked > label:hover,*/
+/*[data-md-color-scheme="slate"] .st-custom-tab-set-style .tabbed-set .tabbed-labels--linked > label:hover {*/
+/*  color: var(--md-typeset-a-color);*/
+/*}*/
+

@@ -1,0 +1,16 @@
+/* Dim all text elements within secondary overloads */
+dl.py.function > dt:nth-of-type(n + 2),
+dl.py.function > dt:nth-of-type(n + 2) *,
+dl.py.method > dt:nth-of-type(n + 2),
+dl.py.method > dt:nth-of-type(n + 2) * {
+  color: var(--md-default-fg-color--lighter) !important;
+  font-weight: 400;
+}
+
+/* Optional: restore normal brightness on hover */
+dl.py.function:hover > dt:nth-of-type(n + 2),
+dl.py.function:hover > dt:nth-of-type(n + 2) *,
+dl.py.method:hover > dt:nth-of-type(n + 2),
+dl.py.method:hover > dt:nth-of-type(n + 2) * {
+  color: var(--md-typeset-color) !important;
+}
