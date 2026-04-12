@@ -9,7 +9,8 @@ import numpy as np
 from formulaic import model_matrix
 import pandas as pd
 
-from differences.models.attgt.results import ATTgtResult, insert_sample_mask_into_att_gt_dict
+from differences.models.attgt.results import ATTgtResult, \
+    insert_sample_mask_into_att_gt_dict
 from differences.models.did.did_cal import did_cal_funcs, get_method_tuple
 
 from differences.models.attgt.data_validator.panel_utility import (
@@ -45,7 +46,8 @@ from differences.models.attgt.utility_ntl import (
     group_time_base_period
 )
 
-from differences.models.attgt.utils.utils import pre_process_base_delta, delta_col_to_create
+from differences.models.attgt.utils.utils import pre_process_base_delta, \
+    delta_col_to_create
 from differences.models.attgt.utils.group_time import filter_group_time_list_of_dicts
 
 
@@ -69,14 +71,6 @@ class ATTgt:
     level of treatment, beside cohort, where entities many undergo a treatment
     at different time but also at different, discrete, intensities/dosage;
     we will refer to this case as multi-valued treatment.
-
-    .. warning::
-        In order to access ATTgt, make sure the optional dependencies are installed
-        in your environment. See the installation guide.
-
-    Group
-    -----
-        model
     """
 
     data = _ValiDIData()
@@ -234,7 +228,8 @@ class ATTgt:
         feasible = (
             self.data[info]
             .reset_index()  # here we make time (and entity) columns
-            .drop(columns=[self._entity_name])  # drop entity: just keep time-cohort-(stratum)
+            .drop(columns=[
+                self._entity_name])  # drop entity: just keep time-cohort-(stratum)
             .drop_duplicates()
             .dropna()  # drop never-treated
         )
@@ -343,7 +338,8 @@ class ATTgt:
                 ]
 
         else:
-            group_time = [{**d, "stratum": xt} for xt in self._dosages for d in group_time]
+            group_time = [{**d, "stratum": xt} for xt in self._dosages for d in
+                          group_time]
 
             if feasible:
                 group_time = [
@@ -541,7 +537,8 @@ class ATTgt:
             formula: str,
             est_method: Literal["reg", "dr", "dr-ipt", "std_ipw-mle", "std_ipw"] |
                         Callable = "reg",
-            control_group: Literal["never_treated", "not_yet_treated"] = "never_treated",
+            control_group: Literal[
+                "never_treated", "not_yet_treated"] = "never_treated",
             as_repeated_cross_section: bool = None,
             base_delta: str | list | dict = "base",
             *,
@@ -895,7 +892,8 @@ class ATTgt:
 
     def aggregate(
             self,
-            type_of_aggregation: Literal["simple", "cohort", "event", "time"] | None = "simple",
+            type_of_aggregation: Literal[
+                                     "simple", "cohort", "event", "time"] | None = "simple",
             overall: bool = False,
             difference: bool | list | dict[str, list] = False,
             *,
@@ -1325,7 +1323,8 @@ class ATTgt:
 
     def results(
             self,
-            type_of_aggregation: Literal["simple", "cohort", "event", "time"] | None = None,
+            type_of_aggregation: Literal[
+                                     "simple", "cohort", "event", "time"] | None = None,
             overall: bool = False,
             difference: bool = False,
             # sample_name: str = None,
@@ -1426,76 +1425,3 @@ class ATTgt:
             return output
 
         return output
-
-    def plot(
-            self,
-            type_of_aggregation: Literal["simple", "cohort", "event", "time"] | None = None,
-            overall: bool = False,
-            difference: bool = False,  # I need this mainly to retrieve the correct
-            **kwargs,
-    ):
-        """
-        Plot the estimates
-
-        Group
-        -----
-            Results
-
-        Parameters
-        ----------
-        type_of_aggregation: *str* | None, default: ``None``
-
-            .. md-tab-set::
-                .. md-tab-item:: "simple"
-
-                    to plot the weighted average of all cohort-time average treatment effects,
-                    with weights proportional to the cohort size.
-
-                .. md-tab-item:: "event"
-
-                    to plot the average effects in each relative period:
-                    periods relative to the treatment; as in an event study.
-
-                .. md-tab-item:: "cohort"
-
-                    to plot the average treatment effect in each cohort.
-
-                .. md-tab-item:: "time"
-
-                     to plot the average treatment effect in each time time.
-
-        overall: *bool*, default: ``False``
-            to plot the average effect within each type_of_aggregation.
-
-        difference: *bool*, default: ``False``
-            take the difference of the estimates
-
-            Available options are:
-
-            - ``True``
-                to plot the difference between 2 samples or 2 strata of treatments
-
-        estimation_details: *bool* | *list* | *str*, default: ``True``
-            include the estimation details in the plot. One can modify the format
-            through plotting_parameters
-
-        estimate_in_x_axis: *bool*, default: ``False``
-            whether to display the ATT estimates in the x-axis
-
-        plotting_parameters
-            a set of parameters to customize the plot. Please refer to the separate documentation
-            for the plotting functionalities built in the library
-
-        Returns
-        -------
-        An interactive plot for the requested estimates
-        """
-
-        data = self.results(
-            type_of_aggregation=type_of_aggregation,
-            overall=overall,
-            difference=difference,
-            # sample_name=sample_name,
-            to_dataframe=True,
-            add_info=not bool(type_of_aggregation),
-        )

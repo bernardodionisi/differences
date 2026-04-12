@@ -34,11 +34,11 @@ multi-valued treatment case discussed
 in [Callaway, Goodman-Bacon & Sant'Anna (2021)](https://arxiv.org/abs/2107.02637)
 
 ```python
-from differences import ATTgt, simulate_data
+import differences
 
-df = simulate_data()
+df = differences.generate_data()
 
-att_gt = ATTgt(data=df, cohort_column='cohort')
+att_gt = differences.ATTgt(data=df, cohort_column='cohort')
 
 att_gt.fit(formula='y')
 

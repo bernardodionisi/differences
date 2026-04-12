@@ -14,3 +14,4 @@ except ModuleNotFoundError:  # pragma: no cover
     )
 
 from differences.models.attgt.attgt import ATTgt
+from differences.tools.generate_data import generate_data
