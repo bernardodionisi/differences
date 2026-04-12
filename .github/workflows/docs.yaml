@@ -23,25 +23,21 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
-          # NOTE: Fake ternary operator, see https://github.com/actions/runner/issues/409
-          fetch-depth: 0  # Fetch all commits and tags, needed for intermediate versions
+          fetch-depth: 0
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: '3.12'
 
       - name: Upgrade pip
         run: python3 -m pip install --upgrade pip
 
-      - name: Install the documentation dependencies
-        run: python3 -m pip install -r docs/requirements.txt
-
-      - name: Install the `differences` package
-        run: python3 -m pip install .
+      - name: Install the `differences` package with docs extras
+        run: python3 -m pip install ".[docs]"
 
       - name: Run Sphinx to build docs
         run: sphinx-build -b dirhtml -v docs/ docs/build/
@@ -51,7 +47,7 @@ jobs:
         run: tar -czvf docs.tar.gz -C docs/build/ .
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docs
           path: docs.tar.gz
@@ -60,16 +56,15 @@ jobs:
   publish:
     name: Publish
     needs: build
-    # Only publish new docs to GitHub pages if on a pre-release branch or tagged released version
     if: ${{ github.event_name == 'push' || github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch'}}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: gh-pages
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docs
 
@@ -110,7 +105,6 @@ jobs:
           rm -rf ${{ steps.folder.outputs.name }}
           mkdir ${{ steps.folder.outputs.name }}
 
-      # Un-tarring is needed because upload-artifact does not preserve case sensitivity
       - name: Untar files
         run: tar -xzvf docs.tar.gz -C ${{ steps.folder.outputs.name }}
 
@@ -135,7 +129,7 @@ jobs:
             print("Removed latest")
           except:
             pass
-            
+
           os.system("rm latest")
 
           list_of_dicts = []
@@ -157,6 +151,6 @@ jobs:
 
       - run: git status
 
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Deploy ${{ github.sha }}
