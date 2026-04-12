@@ -39,6 +39,9 @@ dependencies = [
     "joblib>=1.2.0",
     "typing_extensions >= 4.0.0",
 ]
+dynamic = ["version"]
+
+[project.optional-dependencies]
 all = [
     "numpy>=1.19",
     "scipy>=1.8",
@@ -48,7 +51,7 @@ all = [
     "tqdm>=4.64.1",
     "joblib>=1.2.0",
     "typing_extensions >= 4.0.0",
-    "linearmodels"
+    "linearmodels",
 ]
 test = [
     "pytest",
@@ -65,9 +68,6 @@ typing = [
 docs = [
     "sphinx-tutorials == 0.0.7",
 ]
-dynamic = ["version"]
-
-#[project.optional-dependencies]
 
 
 [project.urls]
