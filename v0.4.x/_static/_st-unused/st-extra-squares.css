@@ -1,0 +1,66 @@
+/*.squares {*/
+/*    display: flex;*/
+/*    gap: 1em;*/
+/*}*/
+
+/*.squares .square {*/
+/*    border: 2px solid #333;*/
+/*    width: 150px;*/
+/*    height: 150px;*/
+/*    padding: 10px;*/
+/*    text-align: center;*/
+/*    display: flex;*/
+/*    align-items: center;*/
+/*    justify-content: center;*/
+/*}*/
+
+
+/*!* Reusable “nice” table *!*/
+/*table.nice-table {*/
+/*    border-collapse: collapse;*/
+/*    width: 100%;*/
+/*    font-size: 0.95rem;*/
+/*}*/
+
+/*!*table.nice-table th,*!*/
+/*!*table.nice-table td {*!*/
+/*!*  border: 1px solid #ddd;*!*/
+/*!*  padding: 0.5rem 0.75rem;*!*/
+/*!*}*!*/
+/*!*table.nice-table thead th {*!*/
+/*!*  background: #f5f7fa;*!*/
+/*!*  font-weight: 600;*!*/
+/*!*}*!*/
+/*!*table.nice-table tbody tr:nth-child(odd) {*!*/
+/*!*  background: #fafbfc;*!*/
+/*!*}*!*/
+
+/*!* ✅ Only links inside these tables *!*/
+
+/*!* Links inside .nice-table only *!*/
+/*table.nice-table a {*/
+/*    color: #b30000; !* your preferred link color *!*/
+/*    font-size: 1.95rem;*/
+/*}*/
+
+
+/*table.nice-table a:hover,*/
+/*table.nice-table a:focus {*/
+/*    background: none !important;*/
+/*    background-color: transparent !important;*/
+/*    color: #0057d9;*/
+/*    text-decoration: none;*/
+/*}*/
+
+/*table.nice-table a code,*/
+/*table.nice-table code.xref,*/
+/*table.nice-table code.literal,*/
+/*table.nice-table .xref.docutils.literal,*/
+/*table.nice-table .xref .pre {*/
+/*  background: none !important;*/
+/*  background-color: transparent !important;*/
+/*  border: 0 !important;*/
+/*  box-shadow: none !important;*/
+/*  padding: 0 !important;*/
+/*  margin: 0 !important;*/
+/*}*/

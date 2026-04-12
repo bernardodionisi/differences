@@ -1,0 +1,84 @@
+/*.hidden {*/
+/*    display: none;*/
+/*}*/
+
+/*.cell.docutils.container .toggle-button {*/
+/*    !*border: 2px solid black; !* Circular border *!*!*/
+/*    border-radius: 50%; !* Makes the border a circle *!*/
+/*    width: 20px; !* Size of the circle *!*/
+/*    height: 20px; !* Size of the circle *!*/
+/*    display: flex;*/
+/*    align-items: center;*/
+/*    justify-content: center;*/
+/*    font-family: 'Courier New', Courier, monospace; !* Retro-style monospaced font *!*/
+/*    font-size: 16px;*/
+/*    font-weight: bold; !* Bold text *!*/
+/*    position: relative; !* Context for absolute positioning *!*/
+/*    top: -10px;*/
+/*    left: -1.2%;*/
+/*    cursor: pointer;*/
+/*    overflow: visible; !* Ensure tooltips are not clipped *!*/
+/*}*/
+
+/*[data-md-color-scheme="default"] .cell.docutils.container .toggle-button:hover {*/
+/*    background-color: #EAA915; !* Change on hover *!*/
+/*}*/
+
+/*[data-md-color-scheme="default"] .cell.docutils.container .toggle-button {*/
+/*    background-color: #E0E2E8; !* White background *!*/
+/*}*/
+
+/*[data-md-color-scheme="slate"] .cell.docutils.container .toggle-button {*/
+/*    background-color: #646976; !* White background *!*/
+/*}*/
+
+/*[data-md-color-scheme="slate"] .cell.docutils.container .toggle-button:hover {*/
+/*    background-color: #EAA915; !* Change on hover *!*/
+/*}*/
+
+/*.toggle-button::after {*/
+/*    content: attr(data-tooltip); !* Pull content from data attribute *!*/
+/*    visibility: hidden; !* Hidden by default, shown on hover *!*/
+/*    !*background-color: black;*!*/
+/*    text-align: center;*/
+/*    border-radius: 6px;*/
+/*    padding: 5px 10px;*/
+/*    position: absolute;*/
+/*    z-index: 1;*/
+/*    bottom: -80%;*/
+/*    !*left: 50%;*!*/
+/*    transform: translateX(+55%);*/
+/*    white-space: nowrap;*/
+/*    font-size: 12px;*/
+/*    margin-bottom: 5px; !* Create a small gap below the button *!*/
+/*}*/
+
+
+/*[data-md-color-scheme="default"] .toggle-button::after {*/
+/*    !*background-color: black;*!*/
+/*    color: black;*/
+/*}*/
+
+/*[data-md-color-scheme="slate"] .toggle-button::after {*/
+/*    !*background-color: black;*!*/
+/*    color: white;*/
+/*}*/
+
+/*.toggle-button:hover::after {*/
+/*    visibility: visible; !* Show tooltip on hover *!*/
+/*}*/
+
+
+/*.cell_input.docutils.container {*/
+/*    border: 1px solid #8C919F;*/
+/*}*/
+
+/*[data-md-color-scheme="slate"] .cell_output.docutils.container .highlight code {*/
+/*    background-color: #232C44;*/
+/*    border-width: 0;*/
+/*}*/
+
+/*[data-md-color-scheme="default"] .cell_output.docutils.container .highlight code {*/
+/*    background-color: #E2DFDF;*/
+/*    border-width: 0;*/
+/*}*/
