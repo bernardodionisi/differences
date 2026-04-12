@@ -54,6 +54,8 @@ jobs:
     name: Publish on PyPI
     needs: [build, release]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # required for PyPI Trusted Publisher (OIDC)
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -64,8 +66,6 @@ jobs:
       - name: Publish to TestPyPI
         uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
-          user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
           packages-dir: dist/
           verbose: true
@@ -73,7 +73,5 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/
           verbose: true
