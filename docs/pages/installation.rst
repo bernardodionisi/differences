@@ -42,6 +42,12 @@ For local development, clone the repo and install in editable mode with the test
    $ cd differences
    $ pip install -e ".[all,test]"
 
+Optionally, enable the repo's pre-push hook to run the CI checks (``nox``) before each push:
+
+.. code-block:: console
+
+   $ git config core.hooksPath .githooks
+
 
 Import
 ------
